@@ -17,10 +17,10 @@ import type {
   StudentJoinResponse,
 } from '../types';
 
-// In production, use the Railway backend URL; in development, use local proxy
-const API_BASE = import.meta.env.PROD
-  ? 'https://backend-production-7dcf.up.railway.app/api'
-  : '/api';
+// In production, use the Railway backend URL from env; in development, use local proxy
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD
+  ? 'https://backend-production-1a68.up.railway.app/api'
+  : '/api');
 
 class ApiClient {
   private teacherToken: string | null = null;
