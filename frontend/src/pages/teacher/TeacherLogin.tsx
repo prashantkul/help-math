@@ -59,21 +59,29 @@ export default function TeacherLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-cyan-600 to-blue-800 flex flex-col items-center justify-center p-6">
+      {/* Decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl" />
+      </div>
+
       {/* Back Button */}
       <div className="absolute top-6 left-6">
         <Link to="/">
-          <Button variant="ghost">
-            <ArrowLeft className="w-5 h-5 mr-2" />
+          <button className="flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+            <ArrowLeft className="w-5 h-5" />
             Back
-          </Button>
+          </button>
         </Link>
       </div>
 
-      <Card variant="default" padding="lg" className="w-full max-w-md">
+      <Card variant="default" padding="lg" className="w-full max-w-md relative z-10 shadow-2xl">
         <div className="text-center mb-8">
-          <span className="text-5xl block mb-4">📚</span>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <span className="text-3xl">📚</span>
+          </div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
             {isRegistering ? 'Create Teacher Account' : 'Teacher Login'}
           </h1>
           <p className="text-gray-600 mt-2">
@@ -96,7 +104,7 @@ export default function TeacherLogin() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ms. Smith"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -113,7 +121,7 @@ export default function TeacherLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="teacher@school.edu"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none"
                 required
               />
             </div>
@@ -130,7 +138,7 @@ export default function TeacherLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none"
                 required
                 minLength={6}
               />
@@ -161,7 +169,7 @@ export default function TeacherLogin() {
               setIsRegistering(!isRegistering);
               setError('');
             }}
-            className="text-indigo-600 hover:text-indigo-700 font-medium"
+            className="text-blue-600 hover:text-blue-700 font-medium"
           >
             {isRegistering
               ? 'Already have an account? Sign in'

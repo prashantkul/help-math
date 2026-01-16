@@ -1,42 +1,40 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Problem {
-    pub id: Uuid,
-    pub class_id: Uuid,
+    pub id: String,
+    pub class_id: String,
     pub original_text: String,
     pub simplified_text: Option<String>,
-    pub skill_tags: Vec<String>,
+    pub skill_tags: String, // JSON array stored as text
     pub difficulty: i32,
-    pub is_published: bool,
+    pub is_published: i32, // SQLite uses 0/1 for booleans
     pub week_number: Option<i32>,
     pub scene_emoji: Option<String>,
-    pub created_at: DateTime<Utc>,
+    pub created_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ScaffoldStep {
-    pub id: Uuid,
-    pub problem_id: Uuid,
+    pub id: String,
+    pub problem_id: String,
     pub step_order: i32,
     pub step_type: String,
     pub prompt_text: String,
     pub simplified_text: Option<String>,
-    pub correct_answer: sqlx::types::Json<serde_json::Value>,
+    pub correct_answer: String, // JSON stored as text
     pub answer_type: String,
-    pub options: Option<sqlx::types::Json<serde_json::Value>>,
-    pub hints: Vec<String>,
+    pub options: Option<String>, // JSON stored as text
+    pub hints: String, // JSON array stored as text
     pub points: i32,
     pub emoji_hint: Option<String>,
-    pub created_at: DateTime<Utc>,
+    pub created_at: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CreateProblem {
-    pub class_id: Uuid,
+    pub class_id: String,
     pub original_text: String,
 }
 
@@ -58,8 +56,8 @@ pub struct GenerateScaffoldRequest {
 
 #[derive(Debug, Serialize)]
 pub struct ProblemResponse {
-    pub id: Uuid,
-    pub class_id: Uuid,
+    pub id: String,
+    pub class_id: String,
     pub original_text: String,
     pub simplified_text: Option<String>,
     pub skill_tags: Vec<String>,
@@ -67,14 +65,14 @@ pub struct ProblemResponse {
     pub is_published: bool,
     pub week_number: Option<i32>,
     pub scene_emoji: Option<String>,
-    pub created_at: DateTime<Utc>,
+    pub created_at: String,
     pub steps: Option<Vec<ScaffoldStepResponse>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ScaffoldStepResponse {
-    pub id: Uuid,
-    pub problem_id: Uuid,
+    pub id: String,
+    pub problem_id: String,
     pub step_order: i32,
     pub step_type: String,
     pub prompt_text: String,
@@ -96,10 +94,10 @@ impl From<ScaffoldStep> for ScaffoldStepResponse {
             step_type: step.step_type,
             prompt_text: step.prompt_text,
             simplified_text: step.simplified_text,
-            correct_answer: step.correct_answer.0,
+            correct_answer: serde_json::from_str(&step.correct_answer).unwrap_or(serde_json::Value::Null),
             answer_type: step.answer_type,
-            options: step.options.map(|o| o.0),
-            hints: step.hints,
+            options: step.options.and_then(|o| serde_json::from_str(&o).ok()),
+            hints: serde_json::from_str(&step.hints).unwrap_or_default(),
             points: step.points,
             emoji_hint: step.emoji_hint,
         }
@@ -113,9 +111,9 @@ impl ProblemResponse {
             class_id: problem.class_id,
             original_text: problem.original_text,
             simplified_text: problem.simplified_text,
-            skill_tags: problem.skill_tags,
+            skill_tags: serde_json::from_str(&problem.skill_tags).unwrap_or_default(),
             difficulty: problem.difficulty,
-            is_published: problem.is_published,
+            is_published: problem.is_published != 0,
             week_number: problem.week_number,
             scene_emoji: problem.scene_emoji,
             created_at: problem.created_at,

@@ -7,6 +7,8 @@ import TeacherLogin from './pages/teacher/TeacherLogin';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ClassManagement from './pages/teacher/ClassManagement';
 import ProblemManager from './pages/teacher/ProblemManager';
+import ProblemPreview from './pages/teacher/ProblemPreview';
+import CurriculumManager from './pages/teacher/CurriculumManager';
 import Analytics from './pages/teacher/Analytics';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -28,7 +30,10 @@ function App() {
                 <Route path="login" element={<TeacherLogin />} />
                 <Route path="dashboard" element={<TeacherDashboard />} />
                 <Route path="classes/:classId" element={<ClassManagement />} />
+                <Route path="classes/:classId/curriculum" element={<CurriculumManager />} />
                 <Route path="classes/:classId/problems" element={<ProblemManager />} />
+                <Route path="lessons/:lessonId/problems" element={<ProblemManager />} />
+                <Route path="problems/:problemId/preview" element={<ProblemPreview />} />
                 <Route path="analytics/:classId" element={<Analytics />} />
                 <Route path="*" element={<Navigate to="/teacher/login" replace />} />
               </Routes>

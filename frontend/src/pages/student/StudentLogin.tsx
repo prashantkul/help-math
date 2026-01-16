@@ -4,18 +4,20 @@ import { ArrowLeft } from 'lucide-react';
 import { useStudentAuth } from '../../hooks/useAuth';
 import { Button, Card, Loading } from '../../components/common';
 import { AvatarSelector } from '../../components/common/Avatar';
-import { AVATAR_OPTIONS, AvatarId } from '../../types';
+import { AVATAR_OPTIONS } from '../../types';
+import type { AvatarId } from '../../types';
 
 export default function StudentLogin() {
   const navigate = useNavigate();
   const { join, isLoading: authLoading, student } = useStudentAuth();
 
-  const [step, setStep] = useState<'name' | 'code' | 'avatar'>('name');
-  const [name, setName] = useState('');
+  const [step, setStep] = useState<'code' | 'passcode' | 'avatar'>('code');
   const [classCode, setClassCode] = useState('');
+  const [passcode, setPasscode] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarId>('bear');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [studentName, setStudentName] = useState('');
 
   // If already logged in, redirect
   if (student && !authLoading) {
@@ -23,37 +25,37 @@ export default function StudentLogin() {
     return null;
   }
 
-  const handleNameSubmit = () => {
-    if (name.trim().length < 2) {
-      setError('Please enter your name (at least 2 letters)');
+  const handleCodeSubmit = () => {
+    if (classCode.length !== 6) {
+      setError('The class code has 6 letters/numbers');
       return;
     }
     setError('');
-    setStep('code');
+    setStep('passcode');
   };
 
-  const handleCodeSubmit = async () => {
-    if (classCode.length !== 6) {
-      setError('The class code has 6 letters/numbers');
+  const handlePasscodeSubmit = async () => {
+    if (passcode.trim().length < 4) {
+      setError('Please enter your passcode');
       return;
     }
 
     setIsLoading(true);
     setError('');
 
-    const result = await join(name.trim(), classCode.toUpperCase());
+    const result = await join(classCode.toUpperCase(), passcode.trim().toLowerCase());
 
-    if (result.success) {
+    if (result.success && result.student) {
+      setStudentName(result.student.name);
       setStep('avatar');
     } else {
-      setError(result.error || 'Could not join class. Check your code!');
+      setError(result.error || 'Invalid passcode. Ask your teacher for help!');
     }
 
     setIsLoading(false);
   };
 
   const handleAvatarSubmit = () => {
-    // Avatar is already saved during join, just redirect
     navigate('/student/dashboard');
   };
 
@@ -72,8 +74,8 @@ export default function StudentLogin() {
         <Button
           variant="ghost"
           onClick={() => {
-            if (step === 'code') setStep('name');
-            else if (step === 'avatar') setStep('code');
+            if (step === 'passcode') setStep('code');
+            else if (step === 'avatar') setStep('passcode');
             else navigate('/');
           }}
         >
@@ -83,52 +85,12 @@ export default function StudentLogin() {
       </div>
 
       <Card variant="warm" padding="lg" className="w-full max-w-md">
-        {step === 'name' && (
+        {step === 'code' && (
           <>
             <div className="text-center mb-8">
               <span className="text-6xl block mb-4">👋</span>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                Hi there!
-              </h1>
-              <p className="text-gray-600 text-lg">
-                What's your name?
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Type your name..."
-                className="w-full px-6 py-4 text-xl rounded-2xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none text-center"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleNameSubmit()}
-              />
-
-              {error && (
-                <p className="text-red-500 text-center">{error}</p>
-              )}
-
-              <Button
-                variant="secondary"
-                size="xl"
-                className="w-full"
-                onClick={handleNameSubmit}
-                disabled={!name.trim()}
-              >
-                Next
-              </Button>
-            </div>
-          </>
-        )}
-
-        {step === 'code' && (
-          <>
-            <div className="text-center mb-8">
-              <span className="text-6xl block mb-4">🔑</span>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                Hi, {name}!
+                Welcome!
               </h1>
               <p className="text-gray-600 text-lg">
                 Enter your class code
@@ -158,7 +120,50 @@ export default function StudentLogin() {
                 size="xl"
                 className="w-full"
                 onClick={handleCodeSubmit}
-                disabled={classCode.length !== 6 || isLoading}
+                disabled={classCode.length !== 6}
+              >
+                Next
+              </Button>
+            </div>
+          </>
+        )}
+
+        {step === 'passcode' && (
+          <>
+            <div className="text-center mb-8">
+              <span className="text-6xl block mb-4">🔑</span>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                Your Passcode
+              </h1>
+              <p className="text-gray-600 text-lg">
+                Enter your personal passcode
+              </p>
+              <p className="text-gray-500 text-sm mt-1">
+                It looks like: bear-1234
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <input
+                type="text"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value.toLowerCase())}
+                placeholder="bear-1234"
+                className="w-full px-6 py-4 text-2xl font-mono rounded-2xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none text-center lowercase"
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handlePasscodeSubmit()}
+              />
+
+              {error && (
+                <p className="text-red-500 text-center">{error}</p>
+              )}
+
+              <Button
+                variant="secondary"
+                size="xl"
+                className="w-full"
+                onClick={handlePasscodeSubmit}
+                disabled={passcode.length < 4 || isLoading}
                 isLoading={isLoading}
               >
                 Join Class
@@ -172,7 +177,7 @@ export default function StudentLogin() {
             <div className="text-center mb-8">
               <span className="text-6xl block mb-4">🎉</span>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                You're in!
+                Welcome, {studentName}!
               </h1>
               <p className="text-gray-600 text-lg">
                 Pick a friend to be your avatar

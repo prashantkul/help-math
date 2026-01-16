@@ -1,16 +1,14 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Teacher {
-    pub id: Uuid,
+    pub id: String,
     pub email: String,
     #[serde(skip_serializing)]
     pub password_hash: String,
     pub name: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -28,10 +26,10 @@ pub struct LoginTeacher {
 
 #[derive(Debug, Serialize)]
 pub struct TeacherResponse {
-    pub id: Uuid,
+    pub id: String,
     pub email: String,
     pub name: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: String,
 }
 
 impl From<Teacher> for TeacherResponse {

@@ -58,7 +58,7 @@ impl PDFService {
                         });
                     }
                 }
-                current_problem = self.strip_problem_number(trimmed).to_string();
+                current_problem = self.strip_problem_number(trimmed);
                 in_problem = true;
             } else if in_problem && !trimmed.is_empty() {
                 // Continue adding to current problem
@@ -122,7 +122,7 @@ impl PDFService {
         patterns.iter().any(|p| p(line))
     }
 
-    fn strip_problem_number(&self, line: &str) -> &str {
+    fn strip_problem_number(&self, line: &str) -> String {
         let trimmed = line.trim();
 
         // Skip leading digits and punctuation
@@ -131,7 +131,7 @@ impl PDFService {
             .take_while(|c| c.is_ascii_digit() || *c == '.' || *c == ')' || *c == ':' || *c == '#' || *c == ' ')
             .count();
 
-        trimmed[skip_count..].trim()
+        trimmed[skip_count..].trim().to_string()
     }
 
     fn extract_page_number(&self, line: &str) -> Option<i32> {

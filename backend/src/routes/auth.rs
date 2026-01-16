@@ -1,10 +1,11 @@
 use axum::{extract::State, http::StatusCode, Json};
 use serde_json::json;
+use uuid::Uuid;
 
 use crate::{
     models::{
-        AuthResponse, CreateTeacher, JoinClass, LoginTeacher, StudentJoinResponse,
-        StudentResponse, TeacherResponse,
+        AuthResponse, CreateTeacher, JoinClass, LoginTeacher, Student, StudentJoinResponse,
+        StudentResponse, Teacher, TeacherResponse,
     },
     AppState,
 };
@@ -47,22 +48,20 @@ pub async fn register_teacher(
             )
         })?;
 
+    let id = Uuid::new_v4().to_string();
+
     // Insert teacher
-    let teacher = sqlx::query_as!(
-        crate::models::Teacher,
-        r#"
-        INSERT INTO teachers (email, password_hash, name)
-        VALUES ($1, $2, $3)
-        RETURNING id, email, password_hash, name, created_at
-        "#,
-        payload.email,
-        password_hash,
-        payload.name
+    sqlx::query(
+        "INSERT INTO teachers (id, email, password_hash, name) VALUES (?, ?, ?, ?)"
     )
-    .fetch_one(&state.db)
+    .bind(&id)
+    .bind(&payload.email)
+    .bind(&password_hash)
+    .bind(&payload.name)
+    .execute(&state.db)
     .await
     .map_err(|e| {
-        if e.to_string().contains("duplicate key") {
+        if e.to_string().contains("UNIQUE constraint failed") {
             (
                 StatusCode::CONFLICT,
                 Json(json!({"error": "Email already registered"})),
@@ -76,10 +75,25 @@ pub async fn register_teacher(
         }
     })?;
 
+    // Fetch the created teacher
+    let teacher: Teacher = sqlx::query_as(
+        "SELECT id, email, password_hash, name, created_at FROM teachers WHERE id = ?"
+    )
+    .bind(&id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to create account"})),
+        )
+    })?;
+
     // Generate token
     let token = state
         .auth_service
-        .generate_teacher_token(teacher.id)
+        .generate_teacher_token(&teacher.id)
         .map_err(|e| {
             tracing::error!("Failed to generate token: {}", e);
             (
@@ -100,11 +114,10 @@ pub async fn login_teacher(
     Json(payload): Json<LoginTeacher>,
 ) -> Result<Json<AuthResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Find teacher
-    let teacher = sqlx::query_as!(
-        crate::models::Teacher,
-        r#"SELECT id, email, password_hash, name, created_at FROM teachers WHERE email = $1"#,
-        payload.email
+    let teacher: Teacher = sqlx::query_as(
+        "SELECT id, email, password_hash, name, created_at FROM teachers WHERE email = ?"
     )
+    .bind(&payload.email)
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
@@ -143,7 +156,7 @@ pub async fn login_teacher(
     // Generate token
     let token = state
         .auth_service
-        .generate_teacher_token(teacher.id)
+        .generate_teacher_token(&teacher.id)
         .map_err(|e| {
             tracing::error!("Failed to generate token: {}", e);
             (
@@ -163,13 +176,6 @@ pub async fn student_join(
     State(state): State<AppState>,
     Json(payload): Json<JoinClass>,
 ) -> Result<Json<StudentJoinResponse>, (StatusCode, Json<serde_json::Value>)> {
-    if payload.name.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": "Name is required"})),
-        ));
-    }
-
     if payload.class_code.len() != 6 {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -177,11 +183,24 @@ pub async fn student_join(
         ));
     }
 
+    if payload.passcode.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Passcode is required"})),
+        ));
+    }
+
     // Find class by join code
-    let class = sqlx::query!(
-        r#"SELECT id, name FROM classes WHERE join_code = $1"#,
-        payload.class_code.to_uppercase()
+    #[derive(sqlx::FromRow)]
+    struct ClassInfo {
+        id: String,
+        name: String,
+    }
+
+    let class: ClassInfo = sqlx::query_as(
+        "SELECT id, name FROM classes WHERE join_code = ?"
     )
+    .bind(payload.class_code.to_uppercase())
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
@@ -198,12 +217,13 @@ pub async fn student_join(
         )
     })?;
 
-    // Check if student with same name already exists in class
-    let existing = sqlx::query!(
-        r#"SELECT id, name, class_id, avatar, total_points, created_at FROM students WHERE name = $1 AND class_id = $2"#,
-        payload.name,
-        class.id
+    // Find student by passcode in this class
+    let student: Student = sqlx::query_as(
+        "SELECT id, name, class_id, external_id, passcode, avatar, total_points, created_at
+         FROM students WHERE class_id = ? AND passcode = ?"
     )
+    .bind(&class.id)
+    .bind(&payload.passcode)
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
@@ -212,45 +232,18 @@ pub async fn student_join(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({"error": "Failed to join class"})),
         )
-    })?;
-
-    let student = if let Some(existing) = existing {
-        // Return existing student
-        crate::models::Student {
-            id: existing.id,
-            name: existing.name,
-            class_id: existing.class_id,
-            avatar: existing.avatar,
-            total_points: existing.total_points,
-            created_at: existing.created_at,
-        }
-    } else {
-        // Create new student
-        sqlx::query_as!(
-            crate::models::Student,
-            r#"
-            INSERT INTO students (name, class_id)
-            VALUES ($1, $2)
-            RETURNING id, name, class_id, avatar, total_points, created_at
-            "#,
-            payload.name,
-            class.id
+    })?
+    .ok_or_else(|| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(json!({"error": "Invalid passcode. Ask your teacher for your passcode!"})),
         )
-        .fetch_one(&state.db)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Failed to join class"})),
-            )
-        })?
-    };
+    })?;
 
     // Generate student token
     let token = state
         .auth_service
-        .generate_student_token(student.id)
+        .generate_student_token(&student.id)
         .map_err(|e| {
             tracing::error!("Failed to generate token: {}", e);
             (

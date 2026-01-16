@@ -3,6 +3,10 @@ import type {
   AuthResponse,
   Class,
   Student,
+  TeacherStudent,
+  CoTeacher,
+  Module,
+  Lesson,
   Problem,
   Assignment,
   StudentProgress,
@@ -11,7 +15,6 @@ import type {
   ScaffoldingResponse,
   PDFUploadResponse,
   StudentJoinResponse,
-  StepAttempt,
 } from '../types';
 
 const API_BASE = '/api';
@@ -106,11 +109,11 @@ class ApiClient {
     return result;
   }
 
-  // Student Auth
-  async joinClass(name: string, classCode: string): Promise<ApiResponse<StudentJoinResponse>> {
+  // Student Auth (students join with class code + passcode)
+  async joinClass(classCode: string, passcode: string): Promise<ApiResponse<StudentJoinResponse>> {
     const result = await this.request<StudentJoinResponse>('/auth/student/join', {
       method: 'POST',
-      body: JSON.stringify({ name, class_code: classCode }),
+      body: JSON.stringify({ class_code: classCode, passcode }),
     }, false);
     if (result.data?.session_token) {
       this.setStudentToken(result.data.session_token);
@@ -130,8 +133,15 @@ class ApiClient {
     });
   }
 
-  async getClassStudents(classId: string): Promise<ApiResponse<Student[]>> {
-    return this.request<Student[]>(`/classes/${classId}/students`);
+  async getClassStudents(classId: string): Promise<ApiResponse<TeacherStudent[]>> {
+    return this.request<TeacherStudent[]>(`/classes/${classId}/students`);
+  }
+
+  async createStudent(classId: string, name: string, externalId?: string): Promise<ApiResponse<TeacherStudent>> {
+    return this.request<TeacherStudent>(`/classes/${classId}/students`, {
+      method: 'POST',
+      body: JSON.stringify({ name, external_id: externalId }),
+    });
   }
 
   async removeStudent(classId: string, studentId: string): Promise<ApiResponse<void>> {
@@ -140,10 +150,88 @@ class ApiClient {
     });
   }
 
+  async resetStudentPasscode(classId: string, studentId: string): Promise<ApiResponse<TeacherStudent>> {
+    return this.request<TeacherStudent>(`/classes/${classId}/students/${studentId}/reset-passcode`, {
+      method: 'POST',
+    });
+  }
+
   async updateClassSettings(classId: string, settings: Partial<Class['settings']>): Promise<ApiResponse<Class>> {
     return this.request<Class>(`/classes/${classId}/settings`, {
       method: 'PUT',
       body: JSON.stringify(settings),
+    });
+  }
+
+  // Co-teachers
+  async getCoTeachers(classId: string): Promise<ApiResponse<CoTeacher[]>> {
+    return this.request<CoTeacher[]>(`/classes/${classId}/coteachers`);
+  }
+
+  async addCoTeacher(classId: string, email: string): Promise<ApiResponse<CoTeacher>> {
+    return this.request<CoTeacher>(`/classes/${classId}/coteachers`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async removeCoTeacher(classId: string, coteacherId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/classes/${classId}/coteachers/${coteacherId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Modules
+  async getModules(classId: string): Promise<ApiResponse<Module[]>> {
+    return this.request<Module[]>(`/classes/${classId}/modules`);
+  }
+
+  async createModule(classId: string, name: string, description?: string): Promise<ApiResponse<Module>> {
+    return this.request<Module>(`/classes/${classId}/modules`, {
+      method: 'POST',
+      body: JSON.stringify({ name, description }),
+    });
+  }
+
+  async updateModule(moduleId: string, updates: { name?: string; description?: string; sort_order?: number; is_published?: boolean }): Promise<ApiResponse<Module>> {
+    return this.request<Module>(`/modules/${moduleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteModule(moduleId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/modules/${moduleId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Lessons
+  async getLessons(moduleId: string): Promise<ApiResponse<Lesson[]>> {
+    return this.request<Lesson[]>(`/modules/${moduleId}/lessons`);
+  }
+
+  async createLesson(moduleId: string, name: string, description?: string): Promise<ApiResponse<Lesson>> {
+    return this.request<Lesson>(`/modules/${moduleId}/lessons`, {
+      method: 'POST',
+      body: JSON.stringify({ name, description }),
+    });
+  }
+
+  async getLesson(lessonId: string): Promise<ApiResponse<Lesson>> {
+    return this.request<Lesson>(`/lessons/${lessonId}`);
+  }
+
+  async updateLesson(lessonId: string, updates: { name?: string; description?: string; sort_order?: number; is_published?: boolean }): Promise<ApiResponse<Lesson>> {
+    return this.request<Lesson>(`/lessons/${lessonId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteLesson(lessonId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/lessons/${lessonId}`, {
+      method: 'DELETE',
     });
   }
 

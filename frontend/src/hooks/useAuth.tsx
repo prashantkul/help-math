@@ -1,4 +1,5 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { apiClient } from '../api/client';
 import type { Teacher, Student } from '../types';
 
@@ -14,7 +15,7 @@ interface StudentAuthContextType {
   student: Student | null;
   className: string | null;
   isLoading: boolean;
-  join: (name: string, classCode: string) => Promise<{ success: boolean; error?: string }>;
+  join: (classCode: string, passcode: string) => Promise<{ success: boolean; error?: string; student?: Student }>;
   logout: () => void;
 }
 
@@ -110,14 +111,14 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const join = async (name: string, classCode: string) => {
-    const result = await apiClient.joinClass(name, classCode);
+  const join = async (classCode: string, passcode: string) => {
+    const result = await apiClient.joinClass(classCode, passcode);
     if (result.data?.student) {
       setStudent(result.data.student);
       setClassName(result.data.class_name);
       localStorage.setItem('student_data', JSON.stringify(result.data.student));
       localStorage.setItem('class_name', result.data.class_name);
-      return { success: true };
+      return { success: true, student: result.data.student };
     }
     return { success: false, error: result.error || 'Failed to join class' };
   };

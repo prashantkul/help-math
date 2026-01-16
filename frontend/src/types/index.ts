@@ -10,9 +10,24 @@ export interface Student {
   id: string;
   name: string;
   class_id: string;
+  external_id?: string;  // Teacher's internal ID for roster correlation
   avatar: string;
   total_points: number;
   created_at: string;
+}
+
+// Student with passcode (for teacher view)
+export interface TeacherStudent extends Student {
+  passcode: string;
+}
+
+// Co-teacher for a class
+export interface CoTeacher {
+  id: string;
+  teacher_id: string;
+  teacher_email: string;
+  teacher_name: string;
+  added_at: string;
 }
 
 export interface Class {
@@ -31,10 +46,34 @@ export interface ClassSettings {
   point_multiplier?: number;
 }
 
+// Module and Lesson types
+export interface Module {
+  id: string;
+  class_id: string;
+  name: string;
+  description?: string;
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
+  lessons?: Lesson[];
+}
+
+export interface Lesson {
+  id: string;
+  module_id: string;
+  name: string;
+  description?: string;
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
+  problem_count?: number;
+}
+
 // Problem types
 export interface Problem {
   id: string;
   class_id: string;
+  lesson_id?: string;
   original_text: string;
   simplified_text?: string;
   skill_tags: SkillTag[];

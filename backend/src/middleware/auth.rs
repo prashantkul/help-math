@@ -1,27 +1,27 @@
 use axum::{
+    body::Body,
     extract::State,
     http::{header, Request, StatusCode},
     middleware::Next,
     response::Response,
 };
-use uuid::Uuid;
 
 use crate::AppState;
 
 #[derive(Clone, Debug)]
 pub struct TeacherAuth {
-    pub teacher_id: Uuid,
+    pub teacher_id: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct StudentAuth {
-    pub student_id: Uuid,
+    pub student_id: String,
 }
 
-pub async fn teacher_auth_middleware<B>(
+pub async fn teacher_auth_middleware(
     State(state): State<AppState>,
-    mut request: Request<B>,
-    next: Next<B>,
+    mut request: Request<Body>,
+    next: Next,
 ) -> Result<Response, StatusCode> {
     let auth_header = request
         .headers()
@@ -43,10 +43,10 @@ pub async fn teacher_auth_middleware<B>(
     Ok(next.run(request).await)
 }
 
-pub async fn student_auth_middleware<B>(
+pub async fn student_auth_middleware(
     State(state): State<AppState>,
-    mut request: Request<B>,
-    next: Next<B>,
+    mut request: Request<Body>,
+    next: Next,
 ) -> Result<Response, StatusCode> {
     let auth_header = request
         .headers()
