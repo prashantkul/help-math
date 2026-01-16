@@ -8,7 +8,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
-    middleware::StudentAuth,
+    app_middleware::StudentAuth,
     models::{
         Assignment, AssignmentResponse, AttemptResult, Problem, ProblemResponse, ScaffoldStep,
         StudentOverallProgress, StudentProgress, StudentProgressResponse, StudentResponse,

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            COUNT(CASE WHEN sp.is_complete THEN 1 END) as completed,\n            COUNT(*) as total\n        FROM student_progress sp\n        JOIN problems p ON sp.problem_id = p.id\n        WHERE p.class_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "completed",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "total",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "c7086e8fe1d285b8bade9ecb9622e146247c2ac462c4fe6ec8c78565ee199414"
+}

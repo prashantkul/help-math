@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id, p.original_text\n        FROM problems p\n        JOIN classes c ON p.class_id = c.id\n        WHERE p.id = $1 AND c.teacher_id = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "original_text",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "0b58267c50088eec12a69b6f560a6af437ec6be7cb2a96313b01ce3333ac0b02"
+}

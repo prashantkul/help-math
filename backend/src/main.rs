@@ -9,7 +9,8 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod middleware as app_middleware;
+#[path = "middleware/mod.rs"]
+mod app_middleware;
 mod models;
 mod routes;
 mod services;

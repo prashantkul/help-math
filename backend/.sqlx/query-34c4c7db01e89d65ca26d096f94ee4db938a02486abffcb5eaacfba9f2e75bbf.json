@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            sp.problem_id,\n            p.original_text,\n            sp.completed_at,\n            sp.stars_earned,\n            sp.total_points_earned\n        FROM student_progress sp\n        JOIN problems p ON sp.problem_id = p.id\n        WHERE sp.student_id = $1 AND sp.is_complete = true\n        ORDER BY sp.completed_at DESC\n        LIMIT 10\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "problem_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "original_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "completed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "stars_earned",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "total_points_earned",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "34c4c7db01e89d65ca26d096f94ee4db938a02486abffcb5eaacfba9f2e75bbf"
+}

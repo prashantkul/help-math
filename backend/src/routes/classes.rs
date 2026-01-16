@@ -7,7 +7,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
-    middleware::TeacherAuth,
+    app_middleware::TeacherAuth,
     models::{Class, ClassResponse, ClassSettings, CreateClass, StudentResponse, UpdateClassSettings},
     AppState,
 };

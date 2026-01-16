@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO classes (teacher_id, name)\n        VALUES ($1, $2)\n        RETURNING id, teacher_id, name, join_code, settings as \"settings: sqlx::types::Json<ClassSettings>\", created_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "teacher_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "join_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "settings: sqlx::types::Json<ClassSettings>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ec86bf79baafe84bf9529dab8564931367e2ec5b6360c112993f569228301745"
+}

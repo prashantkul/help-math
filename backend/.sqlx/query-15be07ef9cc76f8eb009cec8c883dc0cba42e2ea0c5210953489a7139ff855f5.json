@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM scaffold_steps WHERE problem_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "15be07ef9cc76f8eb009cec8c883dc0cba42e2ea0c5210953489a7139ff855f5"
+}

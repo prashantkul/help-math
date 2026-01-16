@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text,\n               correct_answer as \"correct_answer: sqlx::types::Json<serde_json::Value>\",\n               answer_type, options as \"options: sqlx::types::Json<serde_json::Value>\",\n               hints, points, emoji_hint, created_at\n        FROM scaffold_steps\n        WHERE id = $1 AND problem_id = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "problem_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "step_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "step_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "prompt_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "simplified_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "correct_answer: sqlx::types::Json<serde_json::Value>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 7,
+        "name": "answer_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "options: sqlx::types::Json<serde_json::Value>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 9,
+        "name": "hints",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 10,
+        "name": "points",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "emoji_hint",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "802a8d0e26a42e0e72110c8d3ad0c6890830a4b24ef934789613bb243fc9bef0"
+}

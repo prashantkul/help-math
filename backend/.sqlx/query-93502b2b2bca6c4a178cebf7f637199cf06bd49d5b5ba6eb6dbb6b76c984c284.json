@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE students SET total_points = total_points + $1 WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "93502b2b2bca6c4a178cebf7f637199cf06bd49d5b5ba6eb6dbb6b76c984c284"
+}

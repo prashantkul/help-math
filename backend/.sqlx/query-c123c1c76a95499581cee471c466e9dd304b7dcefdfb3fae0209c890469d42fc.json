@@ -1,0 +1,83 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE problems\n        SET\n            original_text = COALESCE($1, original_text),\n            simplified_text = COALESCE($2, simplified_text),\n            skill_tags = COALESCE($3, skill_tags),\n            difficulty = COALESCE($4, difficulty),\n            is_published = COALESCE($5, is_published),\n            week_number = COALESCE($6, week_number),\n            scene_emoji = COALESCE($7, scene_emoji)\n        WHERE id = $8\n        RETURNING id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "class_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "original_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "simplified_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "skill_tags",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 5,
+        "name": "difficulty",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_published",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "week_number",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "scene_emoji",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "VarcharArray",
+        "Int4",
+        "Bool",
+        "Int4",
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "c123c1c76a95499581cee471c466e9dd304b7dcefdfb3fae0209c890469d42fc"
+}

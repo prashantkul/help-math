@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM problems p\n        USING classes c\n        WHERE p.class_id = c.id AND p.id = $1 AND c.teacher_id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d1ee7aa53d0362f1aed084a28fa99ce4a87704f6ddf4f85cef312b028f898547"
+}

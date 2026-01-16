@@ -16,7 +16,7 @@ export default function ClassManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<{ ell_level: 1 | 2 | 3; show_emojis: boolean }>({
     ell_level: 2,
     show_emojis: true,
   });
@@ -220,7 +220,7 @@ export default function ClassManagement() {
               ELL Level (Vocabulary Simplification)
             </label>
             <div className="grid grid-cols-3 gap-3">
-              {[1, 2, 3].map((level) => (
+              {([1, 2, 3] as const).map((level) => (
                 <button
                   key={level}
                   onClick={() => setSettings({ ...settings, ell_level: level })}

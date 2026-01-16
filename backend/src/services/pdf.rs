@@ -122,7 +122,7 @@ impl PDFService {
         patterns.iter().any(|p| p(line))
     }
 
-    fn strip_problem_number(&self, line: &str) -> &str {
+    fn strip_problem_number<'a>(&self, line: &'a str) -> &'a str {
         let trimmed = line.trim();
 
         // Skip leading digits and punctuation

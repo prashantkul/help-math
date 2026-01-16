@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text,\n                   correct_answer as \"correct_answer: sqlx::types::Json<serde_json::Value>\",\n                   answer_type, options as \"options: sqlx::types::Json<serde_json::Value>\",\n                   hints, points, emoji_hint, created_at\n            FROM scaffold_steps\n            WHERE problem_id = $1\n            ORDER BY step_order\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "problem_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "step_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "step_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "prompt_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "simplified_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "correct_answer: sqlx::types::Json<serde_json::Value>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 7,
+        "name": "answer_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "options: sqlx::types::Json<serde_json::Value>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 9,
+        "name": "hints",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 10,
+        "name": "points",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "emoji_hint",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "be72cc6f14c57106c7413f19f2f501c667f14672a617e7fd18ee7395a4ff5d54"
+}

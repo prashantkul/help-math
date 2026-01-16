@@ -1,0 +1,6 @@
+target/
+.env
+.env.local
+*.rs.bk
+data/
+math_scaffold.db

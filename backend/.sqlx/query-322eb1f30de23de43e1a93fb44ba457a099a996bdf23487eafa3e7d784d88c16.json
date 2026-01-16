@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO step_attempts (student_id, step_id, progress_id, attempt_number, answer_given, is_correct, points_earned, time_spent_seconds)\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Jsonb",
+        "Bool",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "322eb1f30de23de43e1a93fb44ba457a099a996bdf23487eafa3e7d784d88c16"
+}
