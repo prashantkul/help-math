@@ -44,8 +44,8 @@ export default function ReadAloudButton({
       className={`${sizeStyles[size]} rounded-full flex items-center justify-center transition-all duration-200 ${
         isSpeaking
           ? 'bg-red-100 text-red-600 hover:bg-red-200'
-          : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
-      } focus:outline-none focus:ring-4 focus:ring-indigo-300 ${className}`}
+          : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+      } focus:outline-none focus:ring-4 focus:ring-blue-300 ${className}`}
       aria-label={isSpeaking ? 'Stop reading' : 'Read aloud'}
       title={isSpeaking ? 'Stop' : 'Read aloud'}
     >

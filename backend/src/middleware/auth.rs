@@ -5,18 +5,17 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use uuid::Uuid;
 
 use crate::AppState;
 
 #[derive(Clone, Debug)]
 pub struct TeacherAuth {
-    pub teacher_id: Uuid,
+    pub teacher_id: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct StudentAuth {
-    pub student_id: Uuid,
+    pub student_id: String,
 }
 
 pub async fn teacher_auth_middleware(

@@ -4,6 +4,9 @@ pub mod student;
 pub mod problem;
 pub mod progress;
 pub mod assignment;
+pub mod class_teacher;
+pub mod module;
+pub mod lesson;
 
 pub use teacher::*;
 pub use class::*;
@@ -11,3 +14,6 @@ pub use student::*;
 pub use problem::*;
 pub use progress::*;
 pub use assignment::*;
+pub use class_teacher::*;
+pub use module::*;
+pub use lesson::*;

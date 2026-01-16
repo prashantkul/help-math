@@ -1,16 +1,14 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Class {
-    pub id: Uuid,
-    pub teacher_id: Uuid,
+    pub id: String,
+    pub teacher_id: String,
     pub name: String,
     pub join_code: String,
-    pub settings: sqlx::types::Json<ClassSettings>,
-    pub created_at: DateTime<Utc>,
+    pub settings: String, // JSON stored as text
+    pub created_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -56,23 +54,29 @@ pub struct UpdateClassSettings {
 
 #[derive(Debug, Serialize)]
 pub struct ClassResponse {
-    pub id: Uuid,
-    pub teacher_id: Uuid,
+    pub id: String,
+    pub teacher_id: String,
     pub name: String,
     pub join_code: String,
     pub settings: ClassSettings,
-    pub created_at: DateTime<Utc>,
+    pub created_at: String,
+}
+
+impl Class {
+    pub fn get_settings(&self) -> ClassSettings {
+        serde_json::from_str(&self.settings).unwrap_or_default()
+    }
 }
 
 impl From<Class> for ClassResponse {
     fn from(class: Class) -> Self {
         Self {
-            id: class.id,
-            teacher_id: class.teacher_id,
-            name: class.name,
-            join_code: class.join_code,
-            settings: class.settings.0,
-            created_at: class.created_at,
+            id: class.id.clone(),
+            teacher_id: class.teacher_id.clone(),
+            name: class.name.clone(),
+            join_code: class.join_code.clone(),
+            settings: class.get_settings(),
+            created_at: class.created_at.clone(),
         }
     }
 }

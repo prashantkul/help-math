@@ -1,9 +1,9 @@
 use axum::{
-    middleware,
+    middleware as axum_middleware,
     routing::{delete, get, post, put},
     Router,
 };
-use sqlx::postgres::PgPoolOptions;
+use sqlx::sqlite::SqlitePoolOptions;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -19,7 +19,7 @@ use services::{AIService, AuthService, GradingService};
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: sqlx::PgPool,
+    pub db: sqlx::SqlitePool,
     pub auth_service: Arc<AuthService>,
     pub ai_service: Arc<AIService>,
     pub grading_service: Arc<GradingService>,
@@ -41,20 +41,29 @@ async fn main() -> anyhow::Result<()> {
 
     // Database connection
     let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/math_scaffold".to_string());
+        .unwrap_or_else(|_| "sqlite:math_scaffold.db?mode=rwc".to_string());
 
-    let db = PgPoolOptions::new()
-        .max_connections(10)
+    let db = SqlitePoolOptions::new()
+        .max_connections(5)
         .connect(&database_url)
         .await?;
 
     tracing::info!("Connected to database");
 
-    // Run migrations (in production, use sqlx migrate)
-    sqlx::query(include_str!("../migrations/001_initial_schema.sql"))
-        .execute(&db)
-        .await
-        .ok(); // Ignore errors if tables already exist
+    // Run migrations - execute each statement separately for SQLite
+    let migrations = [
+        include_str!("../migrations/001_initial_schema.sql"),
+        include_str!("../migrations/002_modules_lessons.sql"),
+    ];
+
+    for migration in migrations {
+        for statement in migration.split(';').filter(|s| !s.trim().is_empty()) {
+            sqlx::query(statement)
+                .execute(&db)
+                .await
+                .ok(); // Ignore errors if tables already exist
+        }
+    }
 
     // Initialize services
     let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-key-change-in-production".to_string());
@@ -67,53 +76,50 @@ async fn main() -> anyhow::Result<()> {
         grading_service: Arc::new(GradingService::new()),
     };
 
-    // Build router
+    // Build protected teacher routes
+    let teacher_routes = Router::new()
+        .route("/classes", get(routes::list_classes).post(routes::create_class))
+        .route("/classes/:id/students", get(routes::get_class_students).post(routes::create_student))
+        .route("/classes/:id/students/:student_id", delete(routes::remove_student))
+        .route("/classes/:id/students/:student_id/reset-passcode", post(routes::reset_student_passcode))
+        .route("/classes/:id/settings", put(routes::update_class_settings))
+        .route("/classes/:id/coteachers", get(routes::get_co_teachers).post(routes::add_co_teacher))
+        .route("/classes/:id/coteachers/:coteacher_id", delete(routes::remove_co_teacher))
+        .route("/classes/:id/modules", get(routes::list_modules).post(routes::create_module))
+        .route("/modules/:id", get(routes::get_lesson).put(routes::update_module).delete(routes::delete_module))
+        .route("/modules/:id/lessons", get(routes::list_lessons).post(routes::create_lesson))
+        .route("/lessons/:id", get(routes::get_lesson).put(routes::update_lesson).delete(routes::delete_lesson))
+        .route("/problems", get(routes::list_problems).post(routes::create_problem))
+        .route("/problems/upload", post(routes::upload_pdf))
+        .route("/problems/:id", get(routes::get_problem).put(routes::update_problem).delete(routes::delete_problem))
+        .route("/problems/:id/scaffold", post(routes::generate_scaffold))
+        .route("/problems/:id/publish", post(routes::publish_problem))
+        .route("/assignments", get(routes::list_assignments).post(routes::create_assignment))
+        .route("/analytics/class/:id", get(routes::get_class_analytics))
+        .route("/analytics/student/:id", get(routes::get_student_analytics))
+        .layer(axum_middleware::from_fn_with_state(state.clone(), middleware::teacher_auth_middleware));
+
+    // Build protected student routes
+    let student_routes = Router::new()
+        .route("/assignments", get(routes::get_student_assignments))
+        .route("/problems/:id", get(routes::get_student_problem))
+        .route("/problems/:id/attempt", post(routes::submit_step_attempt))
+        .route("/progress", get(routes::get_student_progress))
+        .route("/profile", get(routes::get_student_profile))
+        .route("/avatar", put(routes::update_student_avatar))
+        .layer(axum_middleware::from_fn_with_state(state.clone(), middleware::student_auth_middleware));
+
+    // Build public auth routes
+    let auth_routes = Router::new()
+        .route("/teacher/register", post(routes::register_teacher))
+        .route("/teacher/login", post(routes::login_teacher))
+        .route("/student/join", post(routes::student_join));
+
+    // Build main router - auth routes first to avoid conflicts with nested routes
     let app = Router::new()
-        // Auth routes (public)
-        .route("/api/auth/teacher/register", post(routes::register_teacher))
-        .route("/api/auth/teacher/login", post(routes::login_teacher))
-        .route("/api/auth/student/join", post(routes::student_join))
-        // Teacher routes (protected)
-        .nest(
-            "/api",
-            Router::new()
-                .route("/classes", get(routes::list_classes))
-                .route("/classes", post(routes::create_class))
-                .route("/classes/:id/students", get(routes::get_class_students))
-                .route("/classes/:id/students/:student_id", delete(routes::remove_student))
-                .route("/classes/:id/settings", put(routes::update_class_settings))
-                .route("/problems", get(routes::list_problems))
-                .route("/problems", post(routes::create_problem))
-                .route("/problems/upload", post(routes::upload_pdf))
-                .route("/problems/:id", get(routes::get_problem))
-                .route("/problems/:id", put(routes::update_problem))
-                .route("/problems/:id", delete(routes::delete_problem))
-                .route("/problems/:id/scaffold", post(routes::generate_scaffold))
-                .route("/problems/:id/publish", post(routes::publish_problem))
-                .route("/assignments", get(routes::list_assignments))
-                .route("/assignments", post(routes::create_assignment))
-                .route("/analytics/class/:id", get(routes::get_class_analytics))
-                .route("/analytics/student/:id", get(routes::get_student_analytics))
-                .layer(middleware::from_fn_with_state(
-                    state.clone(),
-                    app_middleware::teacher_auth_middleware,
-                )),
-        )
-        // Student routes (protected with student auth)
-        .nest(
-            "/api/student",
-            Router::new()
-                .route("/assignments", get(routes::get_student_assignments))
-                .route("/problems/:id", get(routes::get_student_problem))
-                .route("/problems/:id/attempt", post(routes::submit_step_attempt))
-                .route("/progress", get(routes::get_student_progress))
-                .route("/profile", get(routes::get_student_profile))
-                .route("/avatar", put(routes::update_student_avatar))
-                .layer(middleware::from_fn_with_state(
-                    state.clone(),
-                    app_middleware::student_auth_middleware,
-                )),
-        )
+        .nest("/api/auth", auth_routes)
+        .nest("/api", teacher_routes)
+        .nest("/api/student", student_routes)
         // CORS and tracing
         .layer(
             CorsLayer::new()

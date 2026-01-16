@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Button, Card, ReadAloudButton } from '../../common';
-import { ScaffoldStep } from '../../../types';
+import type { ScaffoldStep } from '../../../types';
 
 interface StepProps {
   step: ScaffoldStep;
   onSubmit: (answer: unknown) => void;
   result: { isCorrect: boolean; pointsEarned: number; hint?: string } | null;
   onTryAgain: () => void;
-  attempts: number;
+  attempts?: number;
 }
 
 const operators = [
@@ -17,7 +17,7 @@ const operators = [
   { value: '÷', label: '÷', name: 'divided by' },
 ];
 
-export default function BuildEquationStep({ step, onSubmit, result, onTryAgain, attempts }: StepProps) {
+export default function BuildEquationStep({ step, onSubmit, result, onTryAgain }: StepProps) {
   const [left, setLeft] = useState<number | null>(null);
   const [operator, setOperator] = useState<string | null>(null);
   const [right, setRight] = useState<number | null>(null);
@@ -52,9 +52,6 @@ export default function BuildEquationStep({ step, onSubmit, result, onTryAgain, 
 
   return (
     <Card variant="warm" padding="lg" className="text-center">
-      {/* Emoji */}
-      <span className="text-5xl block mb-4">{step.emoji_hint || '📝'}</span>
-
       {/* Prompt */}
       <div className="flex items-center justify-center gap-3 mb-6">
         <h2 className="text-2xl font-bold text-gray-800">

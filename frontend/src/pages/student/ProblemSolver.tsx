@@ -5,7 +5,7 @@ import confetti from 'canvas-confetti';
 import { useStudentAuth } from '../../hooks/useAuth';
 import { useProblemSession } from '../../hooks/useStudentProgress';
 import { Button, Card, Loading, ProgressBar, ReadAloudButton } from '../../components/common';
-import { ScaffoldStep } from '../../types';
+import type { ScaffoldStep } from '../../types';
 
 // Step components
 import FindObjectsStep from '../../components/student/steps/FindObjectsStep';

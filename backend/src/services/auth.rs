@@ -3,7 +3,6 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -30,15 +29,15 @@ impl AuthService {
         verify(password, hash).map_err(|e| anyhow!("Failed to verify password: {}", e))
     }
 
-    pub fn generate_teacher_token(&self, teacher_id: Uuid) -> Result<String> {
+    pub fn generate_teacher_token(&self, teacher_id: &str) -> Result<String> {
         self.generate_token(teacher_id, "teacher")
     }
 
-    pub fn generate_student_token(&self, student_id: Uuid) -> Result<String> {
+    pub fn generate_student_token(&self, student_id: &str) -> Result<String> {
         self.generate_token(student_id, "student")
     }
 
-    fn generate_token(&self, user_id: Uuid, role: &str) -> Result<String> {
+    fn generate_token(&self, user_id: &str, role: &str) -> Result<String> {
         let now = Utc::now();
         let exp = now + Duration::days(30);
 
@@ -68,19 +67,19 @@ impl AuthService {
         Ok(token_data.claims)
     }
 
-    pub fn extract_teacher_id(&self, token: &str) -> Result<Uuid> {
+    pub fn extract_teacher_id(&self, token: &str) -> Result<String> {
         let claims = self.validate_token(token)?;
         if claims.role != "teacher" {
             return Err(anyhow!("Not a teacher token"));
         }
-        Uuid::parse_str(&claims.sub).map_err(|e| anyhow!("Invalid UUID: {}", e))
+        Ok(claims.sub)
     }
 
-    pub fn extract_student_id(&self, token: &str) -> Result<Uuid> {
+    pub fn extract_student_id(&self, token: &str) -> Result<String> {
         let claims = self.validate_token(token)?;
         if claims.role != "student" {
             return Err(anyhow!("Not a student token"));
         }
-        Uuid::parse_str(&claims.sub).map_err(|e| anyhow!("Invalid UUID: {}", e))
+        Ok(claims.sub)
     }
 }

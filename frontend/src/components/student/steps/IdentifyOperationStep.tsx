@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Button, Card, ReadAloudButton } from '../../common';
-import { ScaffoldStep } from '../../../types';
+import type { ScaffoldStep } from '../../../types';
 
 interface StepProps {
   step: ScaffoldStep;
   onSubmit: (answer: unknown) => void;
   result: { isCorrect: boolean; pointsEarned: number; hint?: string } | null;
   onTryAgain: () => void;
-  attempts: number;
+  attempts?: number;
 }
 
 const operationEmojis: Record<string, string> = {
@@ -17,7 +17,7 @@ const operationEmojis: Record<string, string> = {
   divide: '➗',
 };
 
-export default function IdentifyOperationStep({ step, onSubmit, result, onTryAgain, attempts }: StepProps) {
+export default function IdentifyOperationStep({ step, onSubmit, result, onTryAgain }: StepProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const options = step.options || [];
 
@@ -39,9 +39,6 @@ export default function IdentifyOperationStep({ step, onSubmit, result, onTryAga
 
   return (
     <Card variant="warm" padding="lg" className="text-center">
-      {/* Emoji */}
-      <span className="text-5xl block mb-4">{step.emoji_hint || '🤔'}</span>
-
       {/* Prompt */}
       <div className="flex items-center justify-center gap-3 mb-6">
         <h2 className="text-xl font-bold text-gray-800">

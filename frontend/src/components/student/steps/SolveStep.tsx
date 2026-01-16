@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Delete } from 'lucide-react';
 import { Button, Card, ReadAloudButton } from '../../common';
-import { ScaffoldStep } from '../../../types';
+import type { ScaffoldStep } from '../../../types';
 
 interface StepProps {
   step: ScaffoldStep;
   onSubmit: (answer: unknown) => void;
   result: { isCorrect: boolean; pointsEarned: number; hint?: string } | null;
   onTryAgain: () => void;
-  attempts: number;
+  attempts?: number;
 }
 
-export default function SolveStep({ step, onSubmit, result, onTryAgain, attempts }: StepProps) {
+export default function SolveStep({ step, onSubmit, result, onTryAgain }: StepProps) {
   const [answer, setAnswer] = useState('');
 
   const handleNumberClick = (num: string) => {
@@ -40,9 +40,6 @@ export default function SolveStep({ step, onSubmit, result, onTryAgain, attempts
 
   return (
     <Card variant="warm" padding="lg" className="text-center">
-      {/* Emoji */}
-      <span className="text-5xl block mb-4">{step.emoji_hint || '🎯'}</span>
-
       {/* Prompt */}
       <div className="flex items-center justify-center gap-3 mb-6">
         <h2 className="text-2xl font-bold text-gray-800">

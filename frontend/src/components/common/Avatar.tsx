@@ -1,4 +1,5 @@
-import { AVATAR_OPTIONS, AvatarId } from '../../types';
+import { AVATAR_OPTIONS } from '../../types';
+import type { AvatarId } from '../../types';
 
 interface AvatarProps {
   avatarId: AvatarId | string;

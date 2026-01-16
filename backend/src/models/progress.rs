@@ -1,38 +1,36 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct StudentProgress {
-    pub id: Uuid,
-    pub student_id: Uuid,
-    pub problem_id: Uuid,
+    pub id: String,
+    pub student_id: String,
+    pub problem_id: String,
     pub current_step: i32,
-    pub is_complete: bool,
+    pub is_complete: i32, // SQLite uses 0/1 for booleans
     pub total_points_earned: i32,
     pub stars_earned: i32,
-    pub started_at: DateTime<Utc>,
-    pub completed_at: Option<DateTime<Utc>>,
+    pub started_at: String,
+    pub completed_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct StepAttempt {
-    pub id: Uuid,
-    pub student_id: Uuid,
-    pub step_id: Uuid,
-    pub progress_id: Uuid,
+    pub id: String,
+    pub student_id: String,
+    pub step_id: String,
+    pub progress_id: String,
     pub attempt_number: i32,
-    pub answer_given: sqlx::types::Json<serde_json::Value>,
-    pub is_correct: bool,
+    pub answer_given: String, // JSON stored as text
+    pub is_correct: i32, // SQLite uses 0/1 for booleans
     pub points_earned: i32,
     pub time_spent_seconds: Option<i32>,
-    pub created_at: DateTime<Utc>,
+    pub created_at: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SubmitAttempt {
-    pub step_id: Uuid,
+    pub step_id: String,
     pub answer: serde_json::Value,
     pub time_spent_seconds: Option<i32>,
 }
@@ -46,15 +44,15 @@ pub struct AttemptResult {
 
 #[derive(Debug, Serialize)]
 pub struct StudentProgressResponse {
-    pub id: Uuid,
-    pub student_id: Uuid,
-    pub problem_id: Uuid,
+    pub id: String,
+    pub student_id: String,
+    pub problem_id: String,
     pub current_step: i32,
     pub is_complete: bool,
     pub total_points_earned: i32,
     pub stars_earned: i32,
-    pub started_at: DateTime<Utc>,
-    pub completed_at: Option<DateTime<Utc>>,
+    pub started_at: String,
+    pub completed_at: Option<String>,
 }
 
 impl From<StudentProgress> for StudentProgressResponse {
@@ -64,7 +62,7 @@ impl From<StudentProgress> for StudentProgressResponse {
             student_id: progress.student_id,
             problem_id: progress.problem_id,
             current_step: progress.current_step,
-            is_complete: progress.is_complete,
+            is_complete: progress.is_complete != 0,
             total_points_earned: progress.total_points_earned,
             stars_earned: progress.stars_earned,
             started_at: progress.started_at,
@@ -82,7 +80,7 @@ pub struct StudentOverallProgress {
 // Analytics types
 #[derive(Debug, Serialize)]
 pub struct ClassAnalytics {
-    pub class_id: Uuid,
+    pub class_id: String,
     pub total_students: i64,
     pub total_problems: i64,
     pub average_completion_rate: f64,
@@ -107,7 +105,7 @@ pub struct WeeklyProgress {
 
 #[derive(Debug, Serialize)]
 pub struct StudentAnalytics {
-    pub student_id: Uuid,
+    pub student_id: String,
     pub student_name: String,
     pub total_problems_attempted: i64,
     pub total_problems_completed: i64,
@@ -120,9 +118,9 @@ pub struct StudentAnalytics {
 
 #[derive(Debug, Serialize)]
 pub struct RecentActivity {
-    pub problem_id: Uuid,
+    pub problem_id: String,
     pub problem_text: String,
-    pub completed_at: DateTime<Utc>,
+    pub completed_at: String,
     pub stars_earned: i32,
     pub points_earned: i32,
 }

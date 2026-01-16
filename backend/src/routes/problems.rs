@@ -19,7 +19,7 @@ use crate::{
 
 #[derive(Deserialize)]
 pub struct ListProblemsQuery {
-    pub class_id: Uuid,
+    pub class_id: String,
 }
 
 pub async fn list_problems(
@@ -27,69 +27,45 @@ pub async fn list_problems(
     Extension(auth): Extension<TeacherAuth>,
     Query(query): Query<ListProblemsQuery>,
 ) -> Result<Json<Vec<ProblemResponse>>, (StatusCode, Json<serde_json::Value>)> {
-    // Verify teacher owns this class
-    let class_exists = sqlx::query!(
-        r#"SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"#,
-        query.class_id,
-        auth.teacher_id
+    #[derive(sqlx::FromRow)]
+    struct ClassExists { id: String }
+
+    let class_exists: Option<ClassExists> = sqlx::query_as(
+        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
     )
+    .bind(&query.class_id)
+    .bind(&auth.teacher_id)
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to fetch problems"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to fetch problems"})))
     })?;
 
     if class_exists.is_none() {
-        return Err((
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Class not found"})),
-        ));
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Class not found"}))));
     }
 
-    let problems = sqlx::query_as!(
-        Problem,
-        r#"
-        SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at
-        FROM problems
-        WHERE class_id = $1
-        ORDER BY created_at DESC
-        "#,
-        query.class_id
+    let problems: Vec<Problem> = sqlx::query_as(
+        "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE class_id = ? ORDER BY created_at DESC"
     )
+    .bind(&query.class_id)
     .fetch_all(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to fetch problems"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to fetch problems"})))
     })?;
 
-    // Fetch steps for each problem
     let mut responses = Vec::new();
     for problem in problems {
-        let steps = sqlx::query_as!(
-            ScaffoldStep,
-            r#"
-            SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text,
-                   correct_answer as "correct_answer: sqlx::types::Json<serde_json::Value>",
-                   answer_type, options as "options: sqlx::types::Json<serde_json::Value>",
-                   hints, points, emoji_hint, created_at
-            FROM scaffold_steps
-            WHERE problem_id = $1
-            ORDER BY step_order
-            "#,
-            problem.id
+        let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
+            "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = ? ORDER BY step_order"
         )
+        .bind(&problem.id)
         .fetch_all(&state.db)
         .await
         .ok();
-
         responses.push(ProblemResponse::from_problem(problem, steps));
     }
 
@@ -99,49 +75,26 @@ pub async fn list_problems(
 pub async fn get_problem(
     State(state): State<AppState>,
     Extension(auth): Extension<TeacherAuth>,
-    Path(problem_id): Path<Uuid>,
+    Path(problem_id): Path<String>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let problem = sqlx::query_as!(
-        Problem,
-        r#"
-        SELECT p.id, p.class_id, p.original_text, p.simplified_text, p.skill_tags,
-               p.difficulty, p.is_published, p.week_number, p.scene_emoji, p.created_at
-        FROM problems p
-        JOIN classes c ON p.class_id = c.id
-        WHERE p.id = $1 AND c.teacher_id = $2
-        "#,
-        problem_id,
-        auth.teacher_id
+    let problem: Option<Problem> = sqlx::query_as(
+        "SELECT p.id, p.class_id, p.original_text, p.simplified_text, p.skill_tags, p.difficulty, p.is_published, p.week_number, p.scene_emoji, p.created_at FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = ? AND c.teacher_id = ?"
     )
+    .bind(&problem_id)
+    .bind(&auth.teacher_id)
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to fetch problem"})),
-        )
-    })?
-    .ok_or_else(|| {
-        (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Problem not found"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to fetch problem"})))
     })?;
 
-    let steps = sqlx::query_as!(
-        ScaffoldStep,
-        r#"
-        SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text,
-               correct_answer as "correct_answer: sqlx::types::Json<serde_json::Value>",
-               answer_type, options as "options: sqlx::types::Json<serde_json::Value>",
-               hints, points, emoji_hint, created_at
-        FROM scaffold_steps
-        WHERE problem_id = $1
-        ORDER BY step_order
-        "#,
-        problem_id
+    let problem = problem.ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))))?;
+
+    let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = ? ORDER BY step_order"
     )
+    .bind(&problem_id)
     .fetch_all(&state.db)
     .await
     .ok();
@@ -154,47 +107,49 @@ pub async fn create_problem(
     Extension(auth): Extension<TeacherAuth>,
     Json(payload): Json<CreateProblem>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
-    // Verify teacher owns this class
-    let class_exists = sqlx::query!(
-        r#"SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"#,
-        payload.class_id,
-        auth.teacher_id
+    #[derive(sqlx::FromRow)]
+    struct ClassExists { id: String }
+
+    let class_exists: Option<ClassExists> = sqlx::query_as(
+        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
     )
+    .bind(&payload.class_id)
+    .bind(&auth.teacher_id)
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to create problem"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to create problem"})))
     })?;
 
     if class_exists.is_none() {
-        return Err((
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Class not found"})),
-        ));
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Class not found"}))));
     }
 
-    let problem = sqlx::query_as!(
-        Problem,
-        r#"
-        INSERT INTO problems (class_id, original_text)
-        VALUES ($1, $2)
-        RETURNING id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at
-        "#,
-        payload.class_id,
-        payload.original_text
+    let id = Uuid::new_v4().to_string();
+
+    sqlx::query(
+        "INSERT INTO problems (id, class_id, original_text, skill_tags) VALUES (?, ?, ?, '[]')"
     )
+    .bind(&id)
+    .bind(&payload.class_id)
+    .bind(&payload.original_text)
+    .execute(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to create problem"})))
+    })?;
+
+    let problem: Problem = sqlx::query_as(
+        "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
+    )
+    .bind(&id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to create problem"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to create problem"})))
     })?;
 
     Ok(Json(ProblemResponse::from_problem(problem, None)))
@@ -205,136 +160,81 @@ pub async fn upload_pdf(
     Extension(auth): Extension<TeacherAuth>,
     mut multipart: Multipart,
 ) -> Result<Json<PDFUploadResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let mut class_id: Option<Uuid> = None;
+    let mut class_id: Option<String> = None;
     let mut pdf_bytes: Option<Vec<u8>> = None;
 
     while let Some(field) = multipart.next_field().await.map_err(|e| {
         tracing::error!("Multipart error: {}", e);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": "Failed to process upload"})),
-        )
+        (StatusCode::BAD_REQUEST, Json(json!({"error": "Failed to process upload"})))
     })? {
         let name = field.name().unwrap_or_default().to_string();
-
         if name == "class_id" {
-            let text = field.text().await.map_err(|e| {
+            class_id = Some(field.text().await.map_err(|e| {
                 tracing::error!("Failed to read class_id: {}", e);
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({"error": "Invalid class_id"})),
-                )
-            })?;
-            class_id = Some(Uuid::parse_str(&text).map_err(|_| {
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({"error": "Invalid class_id format"})),
-                )
+                (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid class_id"})))
             })?);
         } else if name == "file" {
             pdf_bytes = Some(field.bytes().await.map_err(|e| {
                 tracing::error!("Failed to read file: {}", e);
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({"error": "Failed to read file"})),
-                )
+                (StatusCode::BAD_REQUEST, Json(json!({"error": "Failed to read file"})))
             })?.to_vec());
         }
     }
 
-    let class_id = class_id.ok_or_else(|| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": "class_id is required"})),
-        )
-    })?;
+    let class_id = class_id.ok_or_else(|| (StatusCode::BAD_REQUEST, Json(json!({"error": "class_id is required"}))))?;
+    let pdf_bytes = pdf_bytes.ok_or_else(|| (StatusCode::BAD_REQUEST, Json(json!({"error": "PDF file is required"}))))?;
 
-    let pdf_bytes = pdf_bytes.ok_or_else(|| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": "PDF file is required"})),
-        )
-    })?;
+    #[derive(sqlx::FromRow)]
+    struct ClassExists { id: String }
 
-    // Verify teacher owns this class
-    let class_exists = sqlx::query!(
-        r#"SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"#,
-        class_id,
-        auth.teacher_id
-    )
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|e| {
-        tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to process upload"})),
-        )
-    })?;
+    let class_exists: Option<ClassExists> = sqlx::query_as("SELECT id FROM classes WHERE id = ? AND teacher_id = ?")
+        .bind(&class_id)
+        .bind(&auth.teacher_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to process upload"})))
+        })?;
 
     if class_exists.is_none() {
-        return Err((
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Class not found"})),
-        ));
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Class not found"}))));
     }
 
-    // Extract problems from PDF
     let pdf_service = PDFService::new();
     let extracted = pdf_service.extract_problems(&pdf_bytes).map_err(|e| {
         tracing::error!("PDF extraction error: {}", e);
-        (
-            StatusCode::BAD_REQUEST,
-            Json(json!({"error": format!("Failed to extract text from PDF: {}", e)})),
-        )
+        (StatusCode::BAD_REQUEST, Json(json!({"error": format!("Failed to extract text from PDF: {}", e)})))
     })?;
 
-    Ok(Json(PDFUploadResponse {
-        extracted_problems: extracted,
-    }))
+    Ok(Json(PDFUploadResponse { extracted_problems: extracted }))
 }
 
 pub async fn generate_scaffold(
     State(state): State<AppState>,
     Extension(auth): Extension<TeacherAuth>,
-    Path(problem_id): Path<Uuid>,
+    Path(problem_id): Path<String>,
     Json(payload): Json<GenerateScaffoldRequest>,
 ) -> Result<Json<ScaffoldingAIResponse>, (StatusCode, Json<serde_json::Value>)> {
-    // Get problem and verify ownership
-    let problem = sqlx::query!(
-        r#"
-        SELECT p.id, p.original_text
-        FROM problems p
-        JOIN classes c ON p.class_id = c.id
-        WHERE p.id = $1 AND c.teacher_id = $2
-        "#,
-        problem_id,
-        auth.teacher_id
+    #[derive(sqlx::FromRow)]
+    struct ProblemInfo { id: String, original_text: String }
+
+    let problem: Option<ProblemInfo> = sqlx::query_as(
+        "SELECT p.id, p.original_text FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = ? AND c.teacher_id = ?"
     )
+    .bind(&problem_id)
+    .bind(&auth.teacher_id)
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to generate scaffold"})),
-        )
-    })?
-    .ok_or_else(|| {
-        (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Problem not found"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to generate scaffold"})))
     })?;
 
+    let problem = problem.ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))))?;
     let ell_level = payload.ell_level.unwrap_or(2);
 
-    // Generate scaffold using AI
-    let scaffold = match state
-        .ai_service
-        .generate_scaffold(&problem.original_text, ell_level)
-        .await
-    {
+    let scaffold = match state.ai_service.generate_scaffold(&problem.original_text, ell_level).await {
         Ok(scaffold) => scaffold,
         Err(e) => {
             tracing::warn!("AI scaffold generation failed, using fallback: {}", e);
@@ -343,54 +243,50 @@ pub async fn generate_scaffold(
     };
 
     // Delete existing steps
-    sqlx::query!(
-        r#"DELETE FROM scaffold_steps WHERE problem_id = $1"#,
-        problem_id
-    )
-    .execute(&state.db)
-    .await
-    .ok();
+    sqlx::query("DELETE FROM scaffold_steps WHERE problem_id = ?")
+        .bind(&problem_id)
+        .execute(&state.db)
+        .await
+        .ok();
 
     // Save new steps
     for (i, step) in scaffold.steps.iter().enumerate() {
-        sqlx::query!(
-            r#"
-            INSERT INTO scaffold_steps (problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            "#,
-            problem_id,
-            i as i32,
-            step.step_type,
-            step.prompt_text,
-            step.simplified_text,
-            serde_json::to_value(&step.correct_answer).unwrap(),
-            step.answer_type,
-            step.options.as_ref().map(|o| serde_json::to_value(o).unwrap()),
-            &step.hints,
-            step.points,
-            step.emoji_hint
+        let step_id = Uuid::new_v4().to_string();
+        let correct_answer = serde_json::to_string(&step.correct_answer).unwrap();
+        let options = step.options.as_ref().map(|o| serde_json::to_string(o).unwrap());
+        let hints = serde_json::to_string(&step.hints).unwrap();
+
+        sqlx::query(
+            "INSERT INTO scaffold_steps (id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
+        .bind(&step_id)
+        .bind(&problem_id)
+        .bind(i as i32)
+        .bind(&step.step_type)
+        .bind(&step.prompt_text)
+        .bind(&step.simplified_text)
+        .bind(&correct_answer)
+        .bind(&step.answer_type)
+        .bind(&options)
+        .bind(&hints)
+        .bind(step.points)
+        .bind(&step.emoji_hint)
         .execute(&state.db)
         .await
         .ok();
     }
 
     // Update problem metadata
-    sqlx::query!(
-        r#"
-        UPDATE problems
-        SET simplified_text = $1, skill_tags = $2, difficulty = $3, scene_emoji = $4
-        WHERE id = $5
-        "#,
-        scaffold.simplified_problem,
-        &scaffold.skill_tags,
-        scaffold.difficulty,
-        scaffold.scene_emoji,
-        problem_id
-    )
-    .execute(&state.db)
-    .await
-    .ok();
+    let skill_tags = serde_json::to_string(&scaffold.skill_tags).unwrap();
+    sqlx::query("UPDATE problems SET simplified_text = ?, skill_tags = ?, difficulty = ?, scene_emoji = ? WHERE id = ?")
+        .bind(&scaffold.simplified_problem)
+        .bind(&skill_tags)
+        .bind(scaffold.difficulty)
+        .bind(&scaffold.scene_emoji)
+        .bind(&problem_id)
+        .execute(&state.db)
+        .await
+        .ok();
 
     Ok(Json(scaffold))
 }
@@ -398,84 +294,67 @@ pub async fn generate_scaffold(
 pub async fn update_problem(
     State(state): State<AppState>,
     Extension(auth): Extension<TeacherAuth>,
-    Path(problem_id): Path<Uuid>,
+    Path(problem_id): Path<String>,
     Json(payload): Json<UpdateProblem>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
-    // Verify ownership
-    let existing = sqlx::query!(
-        r#"
-        SELECT p.id
-        FROM problems p
-        JOIN classes c ON p.class_id = c.id
-        WHERE p.id = $1 AND c.teacher_id = $2
-        "#,
-        problem_id,
-        auth.teacher_id
+    #[derive(sqlx::FromRow)]
+    struct Exists { id: String }
+
+    let existing: Option<Exists> = sqlx::query_as(
+        "SELECT p.id FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = ? AND c.teacher_id = ?"
     )
+    .bind(&problem_id)
+    .bind(&auth.teacher_id)
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to update problem"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to update problem"})))
     })?;
 
     if existing.is_none() {
-        return Err((
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Problem not found"})),
-        ));
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))));
     }
 
-    let problem = sqlx::query_as!(
-        Problem,
-        r#"
-        UPDATE problems
-        SET
-            original_text = COALESCE($1, original_text),
-            simplified_text = COALESCE($2, simplified_text),
-            skill_tags = COALESCE($3, skill_tags),
-            difficulty = COALESCE($4, difficulty),
-            is_published = COALESCE($5, is_published),
-            week_number = COALESCE($6, week_number),
-            scene_emoji = COALESCE($7, scene_emoji)
-        WHERE id = $8
-        RETURNING id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at
-        "#,
-        payload.original_text,
-        payload.simplified_text,
-        payload.skill_tags.as_deref(),
-        payload.difficulty,
-        payload.is_published,
-        payload.week_number,
-        payload.scene_emoji,
-        problem_id
+    // Build dynamic update
+    if let Some(text) = &payload.original_text {
+        sqlx::query("UPDATE problems SET original_text = ? WHERE id = ?").bind(text).bind(&problem_id).execute(&state.db).await.ok();
+    }
+    if let Some(text) = &payload.simplified_text {
+        sqlx::query("UPDATE problems SET simplified_text = ? WHERE id = ?").bind(text).bind(&problem_id).execute(&state.db).await.ok();
+    }
+    if let Some(tags) = &payload.skill_tags {
+        let tags_json = serde_json::to_string(tags).unwrap();
+        sqlx::query("UPDATE problems SET skill_tags = ? WHERE id = ?").bind(&tags_json).bind(&problem_id).execute(&state.db).await.ok();
+    }
+    if let Some(diff) = payload.difficulty {
+        sqlx::query("UPDATE problems SET difficulty = ? WHERE id = ?").bind(diff).bind(&problem_id).execute(&state.db).await.ok();
+    }
+    if let Some(pub_) = payload.is_published {
+        sqlx::query("UPDATE problems SET is_published = ? WHERE id = ?").bind(if pub_ { 1 } else { 0 }).bind(&problem_id).execute(&state.db).await.ok();
+    }
+    if let Some(week) = payload.week_number {
+        sqlx::query("UPDATE problems SET week_number = ? WHERE id = ?").bind(week).bind(&problem_id).execute(&state.db).await.ok();
+    }
+    if let Some(emoji) = &payload.scene_emoji {
+        sqlx::query("UPDATE problems SET scene_emoji = ? WHERE id = ?").bind(emoji).bind(&problem_id).execute(&state.db).await.ok();
+    }
+
+    let problem: Problem = sqlx::query_as(
+        "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
     )
+    .bind(&problem_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to update problem"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to update problem"})))
     })?;
 
-    let steps = sqlx::query_as!(
-        ScaffoldStep,
-        r#"
-        SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text,
-               correct_answer as "correct_answer: sqlx::types::Json<serde_json::Value>",
-               answer_type, options as "options: sqlx::types::Json<serde_json::Value>",
-               hints, points, emoji_hint, created_at
-        FROM scaffold_steps
-        WHERE problem_id = $1
-        ORDER BY step_order
-        "#,
-        problem_id
+    let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = ? ORDER BY step_order"
     )
+    .bind(&problem_id)
     .fetch_all(&state.db)
     .await
     .ok();
@@ -486,50 +365,51 @@ pub async fn update_problem(
 pub async fn publish_problem(
     State(state): State<AppState>,
     Extension(auth): Extension<TeacherAuth>,
-    Path(problem_id): Path<Uuid>,
+    Path(problem_id): Path<String>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
-    // Verify ownership and get problem
-    let problem = sqlx::query_as!(
-        Problem,
-        r#"
-        UPDATE problems p
-        SET is_published = true
-        FROM classes c
-        WHERE p.class_id = c.id AND p.id = $1 AND c.teacher_id = $2
-        RETURNING p.id, p.class_id, p.original_text, p.simplified_text, p.skill_tags, p.difficulty, p.is_published, p.week_number, p.scene_emoji, p.created_at
-        "#,
-        problem_id,
-        auth.teacher_id
+    #[derive(sqlx::FromRow)]
+    struct Exists { id: String }
+
+    let existing: Option<Exists> = sqlx::query_as(
+        "SELECT p.id FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = ? AND c.teacher_id = ?"
     )
+    .bind(&problem_id)
+    .bind(&auth.teacher_id)
     .fetch_optional(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to publish problem"})),
-        )
-    })?
-    .ok_or_else(|| {
-        (
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Problem not found"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to publish problem"})))
     })?;
 
-    let steps = sqlx::query_as!(
-        ScaffoldStep,
-        r#"
-        SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text,
-               correct_answer as "correct_answer: sqlx::types::Json<serde_json::Value>",
-               answer_type, options as "options: sqlx::types::Json<serde_json::Value>",
-               hints, points, emoji_hint, created_at
-        FROM scaffold_steps
-        WHERE problem_id = $1
-        ORDER BY step_order
-        "#,
-        problem_id
+    if existing.is_none() {
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))));
+    }
+
+    sqlx::query("UPDATE problems SET is_published = 1 WHERE id = ?")
+        .bind(&problem_id)
+        .execute(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to publish problem"})))
+        })?;
+
+    let problem: Problem = sqlx::query_as(
+        "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
     )
+    .bind(&problem_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to publish problem"})))
+    })?;
+
+    let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = ? ORDER BY step_order"
+    )
+    .bind(&problem_id)
     .fetch_all(&state.db)
     .await
     .ok();
@@ -540,33 +420,35 @@ pub async fn publish_problem(
 pub async fn delete_problem(
     State(state): State<AppState>,
     Extension(auth): Extension<TeacherAuth>,
-    Path(problem_id): Path<Uuid>,
+    Path(problem_id): Path<String>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
-    let result = sqlx::query!(
-        r#"
-        DELETE FROM problems p
-        USING classes c
-        WHERE p.class_id = c.id AND p.id = $1 AND c.teacher_id = $2
-        "#,
-        problem_id,
-        auth.teacher_id
+    #[derive(sqlx::FromRow)]
+    struct Exists { id: String }
+
+    let existing: Option<Exists> = sqlx::query_as(
+        "SELECT p.id FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = ? AND c.teacher_id = ?"
     )
-    .execute(&state.db)
+    .bind(&problem_id)
+    .bind(&auth.teacher_id)
+    .fetch_optional(&state.db)
     .await
     .map_err(|e| {
         tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "Failed to delete problem"})),
-        )
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to delete problem"})))
     })?;
 
-    if result.rows_affected() == 0 {
-        return Err((
-            StatusCode::NOT_FOUND,
-            Json(json!({"error": "Problem not found"})),
-        ));
+    if existing.is_none() {
+        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))));
     }
+
+    sqlx::query("DELETE FROM problems WHERE id = ?")
+        .bind(&problem_id)
+        .execute(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to delete problem"})))
+        })?;
 
     Ok(StatusCode::NO_CONTENT)
 }
