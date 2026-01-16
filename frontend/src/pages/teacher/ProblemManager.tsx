@@ -4,7 +4,7 @@ import { ArrowLeft, Upload, Wand2, Check, X, Eye, Trash2, Send } from 'lucide-re
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, Modal } from '../../components/common';
-import { Problem, Class, ExtractedProblem } from '../../types';
+import type { Problem, Class, ExtractedProblem } from '../../types';
 
 export default function ProblemManager() {
   const { classId } = useParams<{ classId: string }>();
@@ -134,30 +134,30 @@ export default function ProblemManager() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loading message="Loading problems..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+      <header className="bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-700 shadow-lg sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link to="/teacher/dashboard">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                <button className="flex items-center gap-2 px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                  <ArrowLeft className="w-4 h-4" />
                   Back
-                </Button>
+                </button>
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-800">
+                <h1 className="text-xl font-bold text-white">
                   {classData?.name} - Problems
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-white/80">
                   {problems.length} problems | {problems.filter((p) => p.is_published).length} published
                 </p>
               </div>
@@ -170,17 +170,20 @@ export default function ProblemManager() {
                 onChange={handleFileUpload}
                 className="hidden"
               />
-              <Button
-                variant="outline"
+              <button
                 onClick={() => fileInputRef.current?.click()}
-                isLoading={isUploading}
+                disabled={isUploading}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50"
               >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload PDF
-              </Button>
-              <Button variant="primary" onClick={() => setShowAddModal(true)}>
+                <Upload className="w-4 h-4" />
+                {isUploading ? 'Uploading...' : 'Upload PDF'}
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              >
                 Add Problem
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -306,6 +309,18 @@ export default function ProblemManager() {
                         <Wand2 className="w-4 h-4 mr-2" />
                         Generate Scaffold
                       </Button>
+                    )}
+
+                    {selectedProblem.steps && selectedProblem.steps.length > 0 && (
+                      <Link to={`/teacher/problems/${selectedProblem.id}/preview`}>
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Preview as Student
+                        </Button>
+                      </Link>
                     )}
 
                     {selectedProblem.steps && selectedProblem.steps.length > 0 && !selectedProblem.is_published && (
