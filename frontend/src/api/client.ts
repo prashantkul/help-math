@@ -14,7 +14,10 @@ import type {
   StepAttempt,
 } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+// In production, use the Railway backend URL; in development, use local proxy
+const API_BASE = import.meta.env.PROD
+  ? 'https://backend-production-7dcf.up.railway.app/api'
+  : '/api';
 
 class ApiClient {
   private teacherToken: string | null = null;
