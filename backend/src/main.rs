@@ -97,7 +97,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/assignments", get(routes::list_assignments).post(routes::create_assignment))
         .route("/analytics/class/:id", get(routes::get_class_analytics))
         .route("/analytics/student/:id", get(routes::get_student_analytics))
-        .layer(axum_middleware::from_fn_with_state(state.clone(), middleware::teacher_auth_middleware));
+        .layer(axum_middleware::from_fn_with_state(state.clone(), app_middleware::teacher_auth_middleware));
 
     // Build protected student routes
     let student_routes = Router::new()
@@ -107,7 +107,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/progress", get(routes::get_student_progress))
         .route("/profile", get(routes::get_student_profile))
         .route("/avatar", put(routes::update_student_avatar))
-        .layer(axum_middleware::from_fn_with_state(state.clone(), middleware::student_auth_middleware));
+        .layer(axum_middleware::from_fn_with_state(state.clone(), app_middleware::student_auth_middleware));
 
     // Build public auth routes
     let auth_routes = Router::new()
