@@ -39,7 +39,7 @@ See `TEST_CREDENTIALS.md` for pre-created accounts, or create your own:
 **Test Points:**
 - [ ] Registration with valid email works
 - [ ] Login with correct credentials works
-- [ ] Login with wrong password shows error
+- [ ] Login with wrong password shows errori
 - [ ] Logout works correctly
 
 ### 2. Class Management
