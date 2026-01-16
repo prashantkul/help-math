@@ -3,6 +3,9 @@ FROM rust:latest as builder
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
+# Cache buster - incrementing this forces rebuild
+RUN echo "Build version: 2"
+
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
