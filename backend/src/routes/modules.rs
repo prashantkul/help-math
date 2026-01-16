@@ -7,6 +7,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::{
+    app_middleware::TeacherAuth,
     models::{
         CreateLesson, CreateModule, Lesson, LessonResponse, Module, ModuleResponse, Teacher,
         UpdateLesson, UpdateModule,
@@ -18,7 +19,7 @@ use crate::{
 
 pub async fn list_modules(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(class_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access to this class
@@ -31,8 +32,8 @@ pub async fn list_modules(
         "#,
     )
     .bind(&class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -68,7 +69,7 @@ pub async fn list_modules(
 
 pub async fn create_module(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(class_id): Path<String>,
     Json(payload): Json<CreateModule>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -82,8 +83,8 @@ pub async fn create_module(
         "#,
     )
     .bind(&class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -133,7 +134,7 @@ pub async fn create_module(
 
 pub async fn update_module(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(module_id): Path<String>,
     Json(payload): Json<UpdateModule>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -154,8 +155,8 @@ pub async fn update_module(
         "#,
     )
     .bind(&module.class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -208,7 +209,7 @@ pub async fn update_module(
 
 pub async fn delete_module(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(module_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access
@@ -228,8 +229,8 @@ pub async fn delete_module(
         "#,
     )
     .bind(&module.class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -251,7 +252,7 @@ pub async fn delete_module(
 
 pub async fn list_lessons(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(module_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access via module -> class
@@ -271,8 +272,8 @@ pub async fn list_lessons(
         "#,
     )
     .bind(&module.class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -308,7 +309,7 @@ pub async fn list_lessons(
 
 pub async fn create_lesson(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(module_id): Path<String>,
     Json(payload): Json<CreateLesson>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -329,8 +330,8 @@ pub async fn create_lesson(
         "#,
     )
     .bind(&module.class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -380,7 +381,7 @@ pub async fn create_lesson(
 
 pub async fn update_lesson(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(lesson_id): Path<String>,
     Json(payload): Json<UpdateLesson>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -407,8 +408,8 @@ pub async fn update_lesson(
         "#,
     )
     .bind(&module.class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -460,7 +461,7 @@ pub async fn update_lesson(
 
 pub async fn delete_lesson(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(lesson_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access via lesson -> module -> class
@@ -486,8 +487,8 @@ pub async fn delete_lesson(
         "#,
     )
     .bind(&module.class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -508,7 +509,7 @@ pub async fn delete_lesson(
 // Get a single lesson with its problems
 pub async fn get_lesson(
     State(state): State<AppState>,
-    Extension(teacher): Extension<Teacher>,
+    Extension(auth): Extension<TeacherAuth>,
     Path(lesson_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = ?")
@@ -533,8 +534,8 @@ pub async fn get_lesson(
         "#,
     )
     .bind(&module.class_id)
-    .bind(&teacher.id)
-    .bind(&teacher.id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
     .fetch_one(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
