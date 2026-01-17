@@ -266,8 +266,19 @@ class ApiClient {
     });
   }
 
+  async createLessonProblem(lessonId: string, originalText: string): Promise<ApiResponse<Problem>> {
+    return this.request<Problem>('/problems', {
+      method: 'POST',
+      body: JSON.stringify({ lesson_id: lessonId, original_text: originalText }),
+    });
+  }
+
   async getProblems(classId: string): Promise<ApiResponse<Problem[]>> {
     return this.request<Problem[]>(`/problems?class_id=${classId}`);
+  }
+
+  async getLessonProblems(lessonId: string): Promise<ApiResponse<Problem[]>> {
+    return this.request<Problem[]>(`/problems?lesson_id=${lessonId}`);
   }
 
   async getProblem(problemId: string): Promise<ApiResponse<Problem>> {

@@ -7,12 +7,16 @@ import { Button, Card, Loading, Modal } from '../../components/common';
 import type { Problem, Class, ExtractedProblem } from '../../types';
 
 export default function ProblemManager() {
-  const { classId } = useParams<{ classId: string }>();
+  const { classId, lessonId } = useParams<{ classId?: string; lessonId?: string }>();
   const navigate = useNavigate();
   const { teacher, isLoading: authLoading } = useTeacherAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Determine if we're in lesson mode or class mode
+  const isLessonMode = !!lessonId;
+
   const [classData, setClassData] = useState<Class | null>(null);
+  const [lessonName, setLessonName] = useState<string>('');
   const [problems, setProblems] = useState<Problem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
@@ -31,26 +35,43 @@ export default function ProblemManager() {
   }, [teacher, authLoading, navigate]);
 
   useEffect(() => {
-    if (classId && teacher) {
+    if ((classId || lessonId) && teacher) {
       fetchData();
     }
-  }, [classId, teacher]);
+  }, [classId, lessonId, teacher]);
 
   const fetchData = async () => {
     setIsLoading(true);
 
-    const [classesResult, problemsResult] = await Promise.all([
-      apiClient.getClasses(),
-      apiClient.getProblems(classId!),
-    ]);
+    if (isLessonMode && lessonId) {
+      // Fetch lesson info and problems for the lesson
+      const [lessonResult, problemsResult] = await Promise.all([
+        apiClient.getLesson(lessonId),
+        apiClient.getLessonProblems(lessonId),
+      ]);
 
-    if (classesResult.data) {
-      const cls = classesResult.data.find((c) => c.id === classId);
-      if (cls) setClassData(cls);
-    }
+      if (lessonResult.data) {
+        setLessonName(lessonResult.data.name);
+      }
 
-    if (problemsResult.data) {
-      setProblems(problemsResult.data);
+      if (problemsResult.data) {
+        setProblems(problemsResult.data);
+      }
+    } else if (classId) {
+      // Fetch class info and problems for the class
+      const [classesResult, problemsResult] = await Promise.all([
+        apiClient.getClasses(),
+        apiClient.getProblems(classId),
+      ]);
+
+      if (classesResult.data) {
+        const cls = classesResult.data.find((c) => c.id === classId);
+        if (cls) setClassData(cls);
+      }
+
+      if (problemsResult.data) {
+        setProblems(problemsResult.data);
+      }
     }
 
     setIsLoading(false);
@@ -75,10 +96,12 @@ export default function ProblemManager() {
   };
 
   const handleAddExtractedProblem = async (text: string) => {
-    if (!classId) return;
+    if (!classId && !lessonId) return;
 
     setIsCreating(true);
-    const result = await apiClient.createProblem(classId, text);
+    const result = isLessonMode && lessonId
+      ? await apiClient.createLessonProblem(lessonId, text)
+      : await apiClient.createProblem(classId!, text);
     if (result.data) {
       setProblems([result.data, ...problems]);
     }
@@ -87,10 +110,12 @@ export default function ProblemManager() {
   };
 
   const handleAddProblem = async () => {
-    if (!classId || !newProblemText.trim()) return;
+    if ((!classId && !lessonId) || !newProblemText.trim()) return;
 
     setIsCreating(true);
-    const result = await apiClient.createProblem(classId, newProblemText.trim());
+    const result = isLessonMode && lessonId
+      ? await apiClient.createLessonProblem(lessonId, newProblemText.trim())
+      : await apiClient.createProblem(classId!, newProblemText.trim());
     if (result.data) {
       setProblems([result.data, ...problems]);
       setShowAddModal(false);
@@ -147,15 +172,16 @@ export default function ProblemManager() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link to="/teacher/dashboard">
-                <button className="flex items-center gap-2 px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back
-                </button>
-              </Link>
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </button>
               <div>
                 <h1 className="text-xl font-bold text-white">
-                  {classData?.name} - Problems
+                  {isLessonMode ? lessonName : classData?.name} - Problems
                 </h1>
                 <p className="text-sm text-white/80">
                   {problems.length} problems | {problems.filter((p) => p.is_published).length} published

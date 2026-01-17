@@ -19,7 +19,8 @@ use crate::{
 
 #[derive(Deserialize)]
 pub struct ListProblemsQuery {
-    pub class_id: String,
+    pub class_id: Option<String>,
+    pub lesson_id: Option<String>,
 }
 
 pub async fn list_problems(
@@ -27,13 +28,75 @@ pub async fn list_problems(
     Extension(auth): Extension<TeacherAuth>,
     Query(query): Query<ListProblemsQuery>,
 ) -> Result<Json<Vec<ProblemResponse>>, (StatusCode, Json<serde_json::Value>)> {
+    // Handle lesson_id query - get problems for a specific lesson
+    if let Some(lesson_id) = &query.lesson_id {
+        // Verify teacher has access via lesson -> module -> class
+        #[derive(sqlx::FromRow)]
+        struct LessonInfo { class_id: String }
+
+        let lesson_info: Option<LessonInfo> = sqlx::query_as(
+            r#"
+            SELECT c.id as class_id
+            FROM lessons l
+            JOIN modules m ON l.module_id = m.id
+            JOIN classes c ON m.class_id = c.id
+            WHERE l.id = ? AND (c.teacher_id = ? OR c.id IN (
+                SELECT class_id FROM class_teachers WHERE teacher_id = ?
+            ))
+            "#
+        )
+        .bind(lesson_id)
+        .bind(&auth.teacher_id)
+        .bind(&auth.teacher_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to fetch problems"})))
+        })?;
+
+        if lesson_info.is_none() {
+            return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Lesson not found or access denied"}))));
+        }
+
+        let problems: Vec<Problem> = sqlx::query_as(
+            "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE lesson_id = ? ORDER BY created_at DESC"
+        )
+        .bind(lesson_id)
+        .fetch_all(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to fetch problems"})))
+        })?;
+
+        let mut responses = Vec::new();
+        for problem in problems {
+            let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
+                "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = ? ORDER BY step_order"
+            )
+            .bind(&problem.id)
+            .fetch_all(&state.db)
+            .await
+            .ok();
+            responses.push(ProblemResponse::from_problem(problem, steps));
+        }
+
+        return Ok(Json(responses));
+    }
+
+    // Handle class_id query - get all problems for a class
+    let class_id = query.class_id.as_ref().ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(json!({"error": "Either class_id or lesson_id is required"})))
+    })?;
+
     #[derive(sqlx::FromRow)]
     struct ClassExists { id: String }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
         "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
     )
-    .bind(&query.class_id)
+    .bind(class_id)
     .bind(&auth.teacher_id)
     .fetch_optional(&state.db)
     .await
@@ -47,9 +110,9 @@ pub async fn list_problems(
     }
 
     let problems: Vec<Problem> = sqlx::query_as(
-        "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE class_id = ? ORDER BY created_at DESC"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE class_id = ? ORDER BY created_at DESC"
     )
-    .bind(&query.class_id)
+    .bind(class_id)
     .fetch_all(&state.db)
     .await
     .map_err(|e| {
@@ -78,7 +141,7 @@ pub async fn get_problem(
     Path(problem_id): Path<String>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
     let problem: Option<Problem> = sqlx::query_as(
-        "SELECT p.id, p.class_id, p.original_text, p.simplified_text, p.skill_tags, p.difficulty, p.is_published, p.week_number, p.scene_emoji, p.created_at FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = ? AND c.teacher_id = ?"
+        "SELECT p.id, p.class_id, p.lesson_id, p.original_text, p.simplified_text, p.skill_tags, p.difficulty, p.is_published, p.week_number, p.scene_emoji, p.created_at FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = ? AND c.teacher_id = ?"
     )
     .bind(&problem_id)
     .bind(&auth.teacher_id)
@@ -107,32 +170,72 @@ pub async fn create_problem(
     Extension(auth): Extension<TeacherAuth>,
     Json(payload): Json<CreateProblem>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
-    #[derive(sqlx::FromRow)]
-    struct ClassExists { id: String }
+    // Determine class_id - either directly provided or derived from lesson_id
+    let (class_id, lesson_id) = if let Some(lesson_id) = &payload.lesson_id {
+        // Get class_id from lesson -> module -> class chain
+        #[derive(sqlx::FromRow)]
+        struct LessonInfo { class_id: String }
 
-    let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
-    )
-    .bind(&payload.class_id)
-    .bind(&auth.teacher_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|e| {
-        tracing::error!("Database error: {}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to create problem"})))
-    })?;
+        let lesson_info: Option<LessonInfo> = sqlx::query_as(
+            r#"
+            SELECT c.id as class_id
+            FROM lessons l
+            JOIN modules m ON l.module_id = m.id
+            JOIN classes c ON m.class_id = c.id
+            WHERE l.id = ? AND (c.teacher_id = ? OR c.id IN (
+                SELECT class_id FROM class_teachers WHERE teacher_id = ?
+            ))
+            "#
+        )
+        .bind(lesson_id)
+        .bind(&auth.teacher_id)
+        .bind(&auth.teacher_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to create problem"})))
+        })?;
 
-    if class_exists.is_none() {
-        return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Class not found"}))));
-    }
+        let info = lesson_info.ok_or_else(|| {
+            (StatusCode::NOT_FOUND, Json(json!({"error": "Lesson not found or access denied"})))
+        })?;
+
+        (info.class_id, Some(lesson_id.clone()))
+    } else if let Some(class_id) = &payload.class_id {
+        // Use directly provided class_id
+        #[derive(sqlx::FromRow)]
+        struct ClassExists { id: String }
+
+        let class_exists: Option<ClassExists> = sqlx::query_as(
+            "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        )
+        .bind(class_id)
+        .bind(&auth.teacher_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Failed to create problem"})))
+        })?;
+
+        if class_exists.is_none() {
+            return Err((StatusCode::NOT_FOUND, Json(json!({"error": "Class not found"}))));
+        }
+
+        (class_id.clone(), None)
+    } else {
+        return Err((StatusCode::BAD_REQUEST, Json(json!({"error": "Either class_id or lesson_id is required"}))));
+    };
 
     let id = Uuid::new_v4().to_string();
 
     sqlx::query(
-        "INSERT INTO problems (id, class_id, original_text, skill_tags) VALUES (?, ?, ?, '[]')"
+        "INSERT INTO problems (id, class_id, lesson_id, original_text, skill_tags) VALUES (?, ?, ?, ?, '[]')"
     )
     .bind(&id)
-    .bind(&payload.class_id)
+    .bind(&class_id)
+    .bind(&lesson_id)
     .bind(&payload.original_text)
     .execute(&state.db)
     .await
@@ -142,7 +245,7 @@ pub async fn create_problem(
     })?;
 
     let problem: Problem = sqlx::query_as(
-        "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
     )
     .bind(&id)
     .fetch_one(&state.db)
@@ -341,7 +444,7 @@ pub async fn update_problem(
     }
 
     let problem: Problem = sqlx::query_as(
-        "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
     )
     .bind(&problem_id)
     .fetch_one(&state.db)
@@ -396,7 +499,7 @@ pub async fn publish_problem(
         })?;
 
     let problem: Problem = sqlx::query_as(
-        "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ?"
     )
     .bind(&problem_id)
     .fetch_one(&state.db)

@@ -5,6 +5,7 @@ use sqlx::FromRow;
 pub struct Problem {
     pub id: String,
     pub class_id: String,
+    pub lesson_id: Option<String>,
     pub original_text: String,
     pub simplified_text: Option<String>,
     pub skill_tags: String, // JSON array stored as text
@@ -34,7 +35,8 @@ pub struct ScaffoldStep {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateProblem {
-    pub class_id: String,
+    pub class_id: Option<String>,
+    pub lesson_id: Option<String>,
     pub original_text: String,
 }
 
@@ -58,6 +60,7 @@ pub struct GenerateScaffoldRequest {
 pub struct ProblemResponse {
     pub id: String,
     pub class_id: String,
+    pub lesson_id: Option<String>,
     pub original_text: String,
     pub simplified_text: Option<String>,
     pub skill_tags: Vec<String>,
@@ -109,6 +112,7 @@ impl ProblemResponse {
         Self {
             id: problem.id,
             class_id: problem.class_id,
+            lesson_id: problem.lesson_id,
             original_text: problem.original_text,
             simplified_text: problem.simplified_text,
             skill_tags: serde_json::from_str(&problem.skill_tags).unwrap_or_default(),
