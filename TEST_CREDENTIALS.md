@@ -25,18 +25,18 @@
 
 ### Class 1: 3rd Grade Math - Room 101 (Join Code: 96T2A2)
 
-| Name | Passcode |
-|------|----------|
-| Emma Wilson | 1111 |
-| Liam Garcia | 2222 |
-| Olivia Martinez | 3333 |
+| ID | Passcode |
+|----|----------|
+| Student A1 | 1111 |
+| Student A2 | 2222 |
+| Student A3 | 3333 |
 
 ### Class 2: 4th Grade Math - Room 205 (Join Code: 6Y78B7)
 
-| Name | Passcode |
-|------|----------|
-| Noah Thompson | 4444 |
-| Ava Davis | 5555 |
+| ID | Passcode |
+|----|----------|
+| Student B1 | 4444 |
+| Student B2 | 5555 |
 
 ---
 
@@ -49,13 +49,13 @@
 ### As a Student:
 1. Go to https://web-frontend-production-594c.up.railway.app/student/login
 2. Enter the class join code (e.g., 96T2A2)
-3. Enter your passcode (e.g., 1111 for Emma Wilson)
+3. Enter your passcode (e.g., 1111 for Student A1)
 
 ---
 
 ## Pre-loaded Content
 
-Sarah Johnson's class includes:
+Teacher 1's class (96T2A2) comes pre-loaded with:
 - **Module:** Addition & Subtraction
 - **Lessons:**
   - Single Digit Addition

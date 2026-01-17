@@ -46,15 +46,15 @@ VALUES (
 -- Students for Class 1: 3rd Grade Math (passcodes are 4-digit codes)
 INSERT OR IGNORE INTO students (id, class_id, name, passcode, avatar, total_points, created_at)
 VALUES
-    ('student-emma-001', 'class-3rd-grade-101', 'Emma Wilson', '1111', 'bear', 0, datetime('now')),
-    ('student-liam-002', 'class-3rd-grade-101', 'Liam Garcia', '2222', 'cat', 0, datetime('now')),
-    ('student-olivia-003', 'class-3rd-grade-101', 'Olivia Martinez', '3333', 'dog', 0, datetime('now'));
+    ('student-001', 'class-3rd-grade-101', 'Student A1', '1111', 'bear', 0, datetime('now')),
+    ('student-002', 'class-3rd-grade-101', 'Student A2', '2222', 'cat', 0, datetime('now')),
+    ('student-003', 'class-3rd-grade-101', 'Student A3', '3333', 'dog', 0, datetime('now'));
 
 -- Students for Class 2: 4th Grade Math (passcodes are 4-digit codes)
 INSERT OR IGNORE INTO students (id, class_id, name, passcode, avatar, total_points, created_at)
 VALUES
-    ('student-noah-004', 'class-4th-grade-205', 'Noah Thompson', '4444', 'fox', 0, datetime('now')),
-    ('student-ava-005', 'class-4th-grade-205', 'Ava Davis', '5555', 'panda', 0, datetime('now'));
+    ('student-004', 'class-4th-grade-205', 'Student B1', '4444', 'fox', 0, datetime('now')),
+    ('student-005', 'class-4th-grade-205', 'Student B2', '5555', 'panda', 0, datetime('now'));
 
 -- Module for Class 1
 INSERT OR IGNORE INTO modules (id, class_id, name, description, sort_order, is_published, created_at)
