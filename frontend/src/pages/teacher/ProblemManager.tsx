@@ -17,6 +17,7 @@ export default function ProblemManager() {
 
   const [classData, setClassData] = useState<Class | null>(null);
   const [lessonName, setLessonName] = useState<string>('');
+  const [derivedClassId, setDerivedClassId] = useState<string | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
@@ -52,6 +53,9 @@ export default function ProblemManager() {
 
       if (lessonResult.data) {
         setLessonName(lessonResult.data.name);
+        if (lessonResult.data.class_id) {
+          setDerivedClassId(lessonResult.data.class_id);
+        }
       }
 
       if (problemsResult.data) {
@@ -79,10 +83,11 @@ export default function ProblemManager() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !classId) return;
+    const effectiveClassId = classId || derivedClassId;
+    if (!file || !effectiveClassId) return;
 
     setIsUploading(true);
-    const result = await apiClient.uploadPDF(classId, file);
+    const result = await apiClient.uploadPDF(effectiveClassId, file);
     setIsUploading(false);
 
     if (result.data?.extracted_problems) {

@@ -552,5 +552,5 @@ pub async fn get_lesson(
     .await
     .unwrap_or(0);
 
-    Ok(Json(LessonResponse::from_lesson_with_count(lesson, count)))
+    Ok(Json(LessonResponse::from_lesson_with_class(lesson, module.class_id, count)))
 }

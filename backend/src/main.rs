@@ -54,6 +54,7 @@ async fn main() -> anyhow::Result<()> {
     let migrations = [
         include_str!("../migrations/001_initial_schema.sql"),
         include_str!("../migrations/002_modules_lessons.sql"),
+        include_str!("../migrations/003_seed_data.sql"),
     ];
 
     for migration in migrations {

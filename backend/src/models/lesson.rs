@@ -30,6 +30,7 @@ pub struct UpdateLesson {
 pub struct LessonResponse {
     pub id: String,
     pub module_id: String,
+    pub class_id: Option<String>,
     pub name: String,
     pub description: Option<String>,
     pub sort_order: i32,
@@ -43,6 +44,7 @@ impl LessonResponse {
         Self {
             id: lesson.id,
             module_id: lesson.module_id,
+            class_id: None,
             name: lesson.name,
             description: lesson.description,
             sort_order: lesson.sort_order,
@@ -56,6 +58,21 @@ impl LessonResponse {
         Self {
             id: lesson.id,
             module_id: lesson.module_id,
+            class_id: None,
+            name: lesson.name,
+            description: lesson.description,
+            sort_order: lesson.sort_order,
+            is_published: lesson.is_published != 0,
+            created_at: lesson.created_at,
+            problem_count: Some(count),
+        }
+    }
+
+    pub fn from_lesson_with_class(lesson: Lesson, class_id: String, count: i32) -> Self {
+        Self {
+            id: lesson.id,
+            module_id: lesson.module_id,
+            class_id: Some(class_id),
             name: lesson.name,
             description: lesson.description,
             sort_order: lesson.sort_order,

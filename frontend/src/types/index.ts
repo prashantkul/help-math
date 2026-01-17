@@ -61,6 +61,7 @@ export interface Module {
 export interface Lesson {
   id: string;
   module_id: string;
+  class_id?: string;
   name: string;
   description?: string;
   sort_order: number;
