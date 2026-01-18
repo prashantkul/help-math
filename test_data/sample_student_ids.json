@@ -1,0 +1,81 @@
+{
+  "description": "Sample student IDs in the animal-number format used by the system. Student ID = Passcode.",
+  "format": "{animal}-{4-digit-number}",
+  "animals": [
+    "bear", "tiger", "wolf", "eagle", "dolphin",
+    "panda", "lion", "fox", "owl", "rabbit",
+    "koala", "penguin", "otter", "hawk", "deer"
+  ],
+  "sample_students": [
+    {
+      "student_id": "bear-7823",
+      "passcode": "bear-7823",
+      "external_id": "STU001",
+      "roster_id": "1",
+      "notes": "Front row"
+    },
+    {
+      "student_id": "tiger-4521",
+      "passcode": "tiger-4521",
+      "external_id": "STU002",
+      "roster_id": "2",
+      "notes": ""
+    },
+    {
+      "student_id": "wolf-9156",
+      "passcode": "wolf-9156",
+      "external_id": null,
+      "roster_id": "3",
+      "notes": "New student"
+    },
+    {
+      "student_id": "eagle-3087",
+      "passcode": "eagle-3087",
+      "external_id": "STU004",
+      "roster_id": null,
+      "notes": "ELL - Spanish speaker"
+    },
+    {
+      "student_id": "dolphin-6234",
+      "passcode": "dolphin-6234",
+      "external_id": "STU005",
+      "roster_id": "5",
+      "notes": "Advanced math skills"
+    },
+    {
+      "student_id": "panda-1892",
+      "passcode": "panda-1892",
+      "external_id": "STU006",
+      "roster_id": "6",
+      "notes": "Needs extra time"
+    },
+    {
+      "student_id": "lion-5467",
+      "passcode": "lion-5467",
+      "external_id": "STU007",
+      "roster_id": "7",
+      "notes": ""
+    },
+    {
+      "student_id": "fox-8901",
+      "passcode": "fox-8901",
+      "external_id": "STU008",
+      "roster_id": "8",
+      "notes": "Sits near window"
+    }
+  ],
+  "test_scenarios": {
+    "valid_login": {
+      "class_code": "96T2A2",
+      "passcode": "bear-7823"
+    },
+    "invalid_passcode": {
+      "class_code": "96T2A2",
+      "passcode": "invalid-0000"
+    },
+    "invalid_class_code": {
+      "class_code": "XXXXXX",
+      "passcode": "bear-7823"
+    }
+  }
+}

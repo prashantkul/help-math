@@ -13,6 +13,7 @@ import Analytics from './pages/teacher/Analytics';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentDashboard from './pages/student/StudentDashboard';
 import ProblemSolver from './pages/student/ProblemSolver';
+import { ForgotPasswordPage, ResetPasswordPage } from './pages/auth';
 
 function App() {
   return (
@@ -20,6 +21,10 @@ function App() {
       <Routes>
         {/* Home/Landing */}
         <Route path="/" element={<Home />} />
+
+        {/* Public Auth Routes */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Teacher Routes */}
         <Route

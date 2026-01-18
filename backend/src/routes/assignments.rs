@@ -27,7 +27,7 @@ pub async fn list_assignments(
     struct ClassExists { id: String }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&query.class_id)
     .bind(&auth.teacher_id)
@@ -43,7 +43,7 @@ pub async fn list_assignments(
     }
 
     let assignments: Vec<Assignment> = sqlx::query_as(
-        "SELECT id, class_id, title, week_start, week_end, problem_ids, created_at FROM assignments WHERE class_id = ? ORDER BY created_at DESC"
+        "SELECT id, class_id, title, week_start, week_end, problem_ids::text, created_at FROM assignments WHERE class_id = $1 ORDER BY created_at DESC"
     )
     .bind(&query.class_id)
     .fetch_all(&state.db)
@@ -65,7 +65,7 @@ pub async fn create_assignment(
     struct ClassExists { id: String }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&payload.class_id)
     .bind(&auth.teacher_id)
@@ -92,7 +92,7 @@ pub async fn create_assignment(
     let problem_ids_json = serde_json::to_string(&payload.problem_ids).unwrap();
 
     sqlx::query(
-        "INSERT INTO assignments (id, class_id, title, week_start, week_end, problem_ids) VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO assignments (id, class_id, title, week_start, week_end, problem_ids) VALUES ($1, $2, $3, $4, $5, $6::jsonb)"
     )
     .bind(&id)
     .bind(&payload.class_id)
@@ -108,7 +108,7 @@ pub async fn create_assignment(
     })?;
 
     let assignment: Assignment = sqlx::query_as(
-        "SELECT id, class_id, title, week_start, week_end, problem_ids, created_at FROM assignments WHERE id = ?"
+        "SELECT id, class_id, title, week_start, week_end, problem_ids::text, created_at FROM assignments WHERE id = $1"
     )
     .bind(&id)
     .fetch_one(&state.db)

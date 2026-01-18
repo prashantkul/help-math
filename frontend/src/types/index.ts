@@ -19,6 +19,8 @@ export interface Student {
 // Student with passcode (for teacher view)
 export interface TeacherStudent extends Student {
   passcode: string;
+  roster_id?: string;
+  notes?: string;
 }
 
 // Co-teacher for a class
@@ -36,6 +38,8 @@ export interface Class {
   name: string;
   join_code: string;
   settings: ClassSettings;
+  purpose?: string;
+  description?: string;
   created_at: string;
 }
 
@@ -66,11 +70,16 @@ export interface Lesson {
   description?: string;
   sort_order: number;
   is_published: boolean;
+  release_type: 'immediate' | 'scheduled' | 'manual' | 'sequential';
+  release_at?: string;
+  release_after_lesson_id?: string;
   created_at: string;
   problem_count?: number;
 }
 
 // Problem types
+export type ProblemState = 'draft' | 'scaffolded' | 'reviewed' | 'published';
+
 export interface Problem {
   id: string;
   class_id: string;
@@ -80,6 +89,7 @@ export interface Problem {
   skill_tags: SkillTag[];
   difficulty: 1 | 2 | 3;
   is_published: boolean;
+  state: ProblemState;
   week_number?: number;
   scene_emoji?: string;
   created_at: string;
@@ -271,3 +281,54 @@ export const AVATAR_OPTIONS = [
 ] as const;
 
 export type AvatarId = typeof AVATAR_OPTIONS[number]['id'];
+
+// Phase 2 - Password reset types
+export interface ForgotPasswordResponse {
+  message: string;
+  reset_link?: string;
+}
+
+// Phase 2 - Bulk student import types
+export interface BulkStudentEntry {
+  name: string;
+  external_id?: string;
+}
+
+// Phase 2 - Roster mapping types
+export interface UpdateStudentRoster {
+  external_id?: string;
+  roster_id?: string;
+  notes?: string;
+}
+
+// Phase 2 - Lesson scheduling types
+export interface UpdateLessonSchedule {
+  release_type: 'immediate' | 'scheduled' | 'manual' | 'sequential';
+  release_at?: string;
+  release_after_lesson_id?: string;
+}
+
+// Phase 2 - Scaffold step editing types
+export interface CreateScaffoldStep {
+  step_type: StepType;
+  prompt_text: string;
+  simplified_text?: string;
+  correct_answer: CorrectAnswer;
+  answer_type: AnswerType;
+  options?: StepOption[];
+  hints: string[];
+  points?: number;
+  emoji_hint?: string;
+}
+
+export interface UpdateScaffoldStep {
+  step_type?: StepType;
+  prompt_text?: string;
+  simplified_text?: string;
+  correct_answer?: CorrectAnswer;
+  answer_type?: AnswerType;
+  options?: StepOption[];
+  hints?: string[];
+  points?: number;
+  emoji_hint?: string;
+}

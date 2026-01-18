@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -7,11 +8,11 @@ pub struct StudentProgress {
     pub student_id: String,
     pub problem_id: String,
     pub current_step: i32,
-    pub is_complete: i32, // SQLite uses 0/1 for booleans
+    pub is_complete: bool,
     pub total_points_earned: i32,
     pub stars_earned: i32,
-    pub started_at: String,
-    pub completed_at: Option<String>,
+    pub started_at: DateTime<Utc>,
+    pub completed_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -22,10 +23,10 @@ pub struct StepAttempt {
     pub progress_id: String,
     pub attempt_number: i32,
     pub answer_given: String, // JSON stored as text
-    pub is_correct: i32, // SQLite uses 0/1 for booleans
+    pub is_correct: bool,
     pub points_earned: i32,
     pub time_spent_seconds: Option<i32>,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -62,11 +63,11 @@ impl From<StudentProgress> for StudentProgressResponse {
             student_id: progress.student_id,
             problem_id: progress.problem_id,
             current_step: progress.current_step,
-            is_complete: progress.is_complete != 0,
+            is_complete: progress.is_complete,
             total_points_earned: progress.total_points_earned,
             stars_earned: progress.stars_earned,
-            started_at: progress.started_at,
-            completed_at: progress.completed_at,
+            started_at: progress.started_at.to_rfc3339(),
+            completed_at: progress.completed_at.map(|dt| dt.to_rfc3339()),
         }
     }
 }

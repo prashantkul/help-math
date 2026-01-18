@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -8,8 +9,8 @@ pub struct Module {
     pub name: String,
     pub description: Option<String>,
     pub sort_order: i32,
-    pub is_published: i32,
-    pub created_at: String,
+    pub is_published: bool,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -46,8 +47,8 @@ impl ModuleResponse {
             name: module.name,
             description: module.description,
             sort_order: module.sort_order,
-            is_published: module.is_published != 0,
-            created_at: module.created_at,
+            is_published: module.is_published,
+            created_at: module.created_at.to_rfc3339(),
             lessons: lessons.map(|l| l.into_iter().map(super::LessonResponse::from_lesson).collect()),
         }
     }

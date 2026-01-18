@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -10,10 +11,11 @@ pub struct Problem {
     pub simplified_text: Option<String>,
     pub skill_tags: String, // JSON array stored as text
     pub difficulty: i32,
-    pub is_published: i32, // SQLite uses 0/1 for booleans
+    pub is_published: bool,
+    pub state: String, // 'draft', 'scaffolded', 'reviewed', 'published'
     pub week_number: Option<i32>,
     pub scene_emoji: Option<String>,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -30,7 +32,7 @@ pub struct ScaffoldStep {
     pub hints: String, // JSON array stored as text
     pub points: i32,
     pub emoji_hint: Option<String>,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -66,6 +68,7 @@ pub struct ProblemResponse {
     pub skill_tags: Vec<String>,
     pub difficulty: i32,
     pub is_published: bool,
+    pub state: String, // 'draft', 'scaffolded', 'reviewed', 'published'
     pub week_number: Option<i32>,
     pub scene_emoji: Option<String>,
     pub created_at: String,
@@ -117,13 +120,48 @@ impl ProblemResponse {
             simplified_text: problem.simplified_text,
             skill_tags: serde_json::from_str(&problem.skill_tags).unwrap_or_default(),
             difficulty: problem.difficulty,
-            is_published: problem.is_published != 0,
+            is_published: problem.is_published,
+            state: problem.state,
             week_number: problem.week_number,
             scene_emoji: problem.scene_emoji,
-            created_at: problem.created_at,
+            created_at: problem.created_at.to_rfc3339(),
             steps: steps.map(|s| s.into_iter().map(ScaffoldStepResponse::from).collect()),
         }
     }
+}
+
+// Request to create a new scaffold step
+#[derive(Debug, Deserialize)]
+pub struct CreateScaffoldStep {
+    pub step_type: String,
+    pub prompt_text: String,
+    pub simplified_text: Option<String>,
+    pub correct_answer: serde_json::Value,
+    pub answer_type: String,
+    pub options: Option<serde_json::Value>,
+    pub hints: Vec<String>,
+    pub points: Option<i32>,
+    pub emoji_hint: Option<String>,
+}
+
+// Request to update an existing scaffold step
+#[derive(Debug, Deserialize)]
+pub struct UpdateScaffoldStep {
+    pub step_type: Option<String>,
+    pub prompt_text: Option<String>,
+    pub simplified_text: Option<String>,
+    pub correct_answer: Option<serde_json::Value>,
+    pub answer_type: Option<String>,
+    pub options: Option<serde_json::Value>,
+    pub hints: Option<Vec<String>>,
+    pub points: Option<i32>,
+    pub emoji_hint: Option<String>,
+}
+
+// Request to reorder scaffold steps
+#[derive(Debug, Deserialize)]
+pub struct ReorderScaffoldSteps {
+    pub step_ids: Vec<String>,
 }
 
 // AI Scaffolding types

@@ -163,7 +163,15 @@ export default function TeacherLogin() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
+        {!isRegistering && (
+          <div className="mt-4 text-center">
+            <Link to="/forgot-password" className="text-gray-500 hover:text-blue-600 text-sm">
+              Forgot your password?
+            </Link>
+          </div>
+        )}
+
+        <div className="mt-4 text-center">
           <button
             onClick={() => {
               setIsRegistering(!isRegistering);

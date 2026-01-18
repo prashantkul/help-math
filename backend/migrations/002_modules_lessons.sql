@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS modules (
     name TEXT NOT NULL,
     description TEXT,
     sort_order INTEGER DEFAULT 0 NOT NULL,
-    is_published INTEGER DEFAULT 0 NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL
+    is_published BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_modules_class_id ON modules(class_id);
@@ -18,11 +18,11 @@ CREATE TABLE IF NOT EXISTS lessons (
     name TEXT NOT NULL,
     description TEXT,
     sort_order INTEGER DEFAULT 0 NOT NULL,
-    is_published INTEGER DEFAULT 0 NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL
+    is_published BOOLEAN DEFAULT FALSE NOT NULL,
+    release_type TEXT DEFAULT 'immediate' NOT NULL,
+    release_at TIMESTAMPTZ,
+    release_after_lesson_id TEXT REFERENCES lessons(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_lessons_module_id ON lessons(module_id);
-
--- Add lesson_id to problems table (nullable for backwards compatibility)
-ALTER TABLE problems ADD COLUMN lesson_id TEXT REFERENCES lessons(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_lessons_module_id ON lessons(module_id)

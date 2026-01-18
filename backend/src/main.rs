@@ -3,7 +3,7 @@ use axum::{
     routing::{delete, get, post, put},
     Router,
 };
-use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -19,7 +19,7 @@ use services::{AIService, AuthService, GradingService};
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: sqlx::SqlitePool,
+    pub db: sqlx::PgPool,
     pub auth_service: Arc<AuthService>,
     pub ai_service: Arc<AIService>,
     pub grading_service: Arc<GradingService>,
@@ -41,28 +41,29 @@ async fn main() -> anyhow::Result<()> {
 
     // Database connection
     let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite:math_scaffold.db?mode=rwc".to_string());
+        .unwrap_or_else(|_| "postgres://helpmath:helpmath_dev@localhost:5432/helpmath".to_string());
 
-    let db = SqlitePoolOptions::new()
+    let db = PgPoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
         .await?;
 
     tracing::info!("Connected to database");
 
-    // Run migrations - execute each statement separately for SQLite
+    // Run migrations - execute each statement separately for PostgreSQL
     let migrations = [
         include_str!("../migrations/001_initial_schema.sql"),
         include_str!("../migrations/002_modules_lessons.sql"),
         include_str!("../migrations/003_seed_data.sql"),
+        include_str!("../migrations/004_phase2_features.sql"),
     ];
 
     for migration in migrations {
         for statement in migration.split(';').filter(|s| !s.trim().is_empty()) {
-            sqlx::query(statement)
-                .execute(&db)
-                .await
-                .ok(); // Ignore errors if tables already exist
+            if let Err(e) = sqlx::query(statement).execute(&db).await {
+                // Log but continue - table may already exist
+                tracing::debug!("Migration statement skipped: {}", e);
+            }
         }
     }
 
@@ -81,8 +82,11 @@ async fn main() -> anyhow::Result<()> {
     let teacher_routes = Router::new()
         .route("/classes", get(routes::list_classes).post(routes::create_class))
         .route("/classes/:id/students", get(routes::get_class_students).post(routes::create_student))
+        .route("/classes/:id/students/bulk", post(routes::bulk_create_students))
+        .route("/classes/:id/students/export", get(routes::export_students))
         .route("/classes/:id/students/:student_id", delete(routes::remove_student))
         .route("/classes/:id/students/:student_id/reset-passcode", post(routes::reset_student_passcode))
+        .route("/classes/:id/students/:student_id/roster", put(routes::update_student_roster))
         .route("/classes/:id/settings", put(routes::update_class_settings))
         .route("/classes/:id/coteachers", get(routes::get_co_teachers).post(routes::add_co_teacher))
         .route("/classes/:id/coteachers/:coteacher_id", delete(routes::remove_co_teacher))
@@ -90,11 +94,16 @@ async fn main() -> anyhow::Result<()> {
         .route("/modules/:id", get(routes::get_lesson).put(routes::update_module).delete(routes::delete_module))
         .route("/modules/:id/lessons", get(routes::list_lessons).post(routes::create_lesson))
         .route("/lessons/:id", get(routes::get_lesson).put(routes::update_lesson).delete(routes::delete_lesson))
+        .route("/lessons/:id/schedule", put(routes::update_lesson_schedule))
         .route("/problems", get(routes::list_problems).post(routes::create_problem))
         .route("/problems/upload", post(routes::upload_pdf))
         .route("/problems/:id", get(routes::get_problem).put(routes::update_problem).delete(routes::delete_problem))
         .route("/problems/:id/scaffold", post(routes::generate_scaffold))
         .route("/problems/:id/publish", post(routes::publish_problem))
+        .route("/problems/:id/review", post(routes::review_problem))
+        .route("/problems/:id/steps", post(routes::add_scaffold_step))
+        .route("/problems/:id/steps/reorder", put(routes::reorder_scaffold_steps))
+        .route("/problems/:id/steps/:step_id", put(routes::update_scaffold_step).delete(routes::delete_scaffold_step))
         .route("/assignments", get(routes::list_assignments).post(routes::create_assignment))
         .route("/analytics/class/:id", get(routes::get_class_analytics))
         .route("/analytics/student/:id", get(routes::get_student_analytics))
@@ -114,6 +123,8 @@ async fn main() -> anyhow::Result<()> {
     let auth_routes = Router::new()
         .route("/teacher/register", post(routes::register_teacher))
         .route("/teacher/login", post(routes::login_teacher))
+        .route("/teacher/forgot-password", post(routes::forgot_password))
+        .route("/teacher/reset-password", post(routes::reset_password))
         .route("/student/join", post(routes::student_join));
 
     // Build main router - auth routes first to avoid conflicts with nested routes

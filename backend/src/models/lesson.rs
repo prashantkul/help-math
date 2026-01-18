@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -8,8 +9,11 @@ pub struct Lesson {
     pub name: String,
     pub description: Option<String>,
     pub sort_order: i32,
-    pub is_published: i32,
-    pub created_at: String,
+    pub is_published: bool,
+    pub release_type: String, // 'immediate', 'scheduled', 'manual', 'sequential'
+    pub release_at: Option<DateTime<Utc>>,
+    pub release_after_lesson_id: Option<String>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -26,6 +30,13 @@ pub struct UpdateLesson {
     pub is_published: Option<bool>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UpdateLessonSchedule {
+    pub release_type: String, // 'immediate', 'scheduled', 'manual', 'sequential'
+    pub release_at: Option<String>,
+    pub release_after_lesson_id: Option<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct LessonResponse {
     pub id: String,
@@ -35,6 +46,9 @@ pub struct LessonResponse {
     pub description: Option<String>,
     pub sort_order: i32,
     pub is_published: bool,
+    pub release_type: String,
+    pub release_at: Option<String>,
+    pub release_after_lesson_id: Option<String>,
     pub created_at: String,
     pub problem_count: Option<i32>,
 }
@@ -48,8 +62,11 @@ impl LessonResponse {
             name: lesson.name,
             description: lesson.description,
             sort_order: lesson.sort_order,
-            is_published: lesson.is_published != 0,
-            created_at: lesson.created_at,
+            is_published: lesson.is_published,
+            release_type: lesson.release_type,
+            release_at: lesson.release_at.map(|dt| dt.to_rfc3339()),
+            release_after_lesson_id: lesson.release_after_lesson_id,
+            created_at: lesson.created_at.to_rfc3339(),
             problem_count: None,
         }
     }
@@ -62,8 +79,11 @@ impl LessonResponse {
             name: lesson.name,
             description: lesson.description,
             sort_order: lesson.sort_order,
-            is_published: lesson.is_published != 0,
-            created_at: lesson.created_at,
+            is_published: lesson.is_published,
+            release_type: lesson.release_type,
+            release_at: lesson.release_at.map(|dt| dt.to_rfc3339()),
+            release_after_lesson_id: lesson.release_after_lesson_id,
+            created_at: lesson.created_at.to_rfc3339(),
             problem_count: Some(count),
         }
     }
@@ -76,8 +96,11 @@ impl LessonResponse {
             name: lesson.name,
             description: lesson.description,
             sort_order: lesson.sort_order,
-            is_published: lesson.is_published != 0,
-            created_at: lesson.created_at,
+            is_published: lesson.is_published,
+            release_type: lesson.release_type,
+            release_at: lesson.release_at.map(|dt| dt.to_rfc3339()),
+            release_after_lesson_id: lesson.release_after_lesson_id,
+            created_at: lesson.created_at.to_rfc3339(),
             problem_count: Some(count),
         }
     }

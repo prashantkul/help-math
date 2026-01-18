@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -7,10 +8,12 @@ pub struct Student {
     pub name: String,
     pub class_id: String,
     pub external_id: Option<String>,  // Teacher's internal ID for roster correlation
+    pub roster_id: Option<String>,    // Additional roster ID for external systems
+    pub notes: Option<String>,        // Teacher notes about the student
     pub passcode: String,  // Unique passcode for joining
     pub avatar: String,
     pub total_points: i32,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
 }
 
 // Student joins with class code + passcode
@@ -38,6 +41,14 @@ pub struct UpdateStudentAvatar {
     pub avatar: String,
 }
 
+// Update student roster mapping
+#[derive(Debug, Deserialize)]
+pub struct UpdateStudentRoster {
+    pub external_id: Option<String>,
+    pub roster_id: Option<String>,
+    pub notes: Option<String>,
+}
+
 // Response for students (doesn't include passcode)
 #[derive(Debug, Serialize)]
 pub struct StudentResponse {
@@ -45,6 +56,7 @@ pub struct StudentResponse {
     pub name: String,
     pub class_id: String,
     pub external_id: Option<String>,
+    pub roster_id: Option<String>,
     pub avatar: String,
     pub total_points: i32,
     pub created_at: String,
@@ -57,20 +69,23 @@ impl From<Student> for StudentResponse {
             name: student.name,
             class_id: student.class_id,
             external_id: student.external_id,
+            roster_id: student.roster_id,
             avatar: student.avatar,
             total_points: student.total_points,
-            created_at: student.created_at,
+            created_at: student.created_at.to_rfc3339(),
         }
     }
 }
 
-// Response for teachers (includes passcode)
+// Response for teachers (includes passcode and notes)
 #[derive(Debug, Serialize)]
 pub struct TeacherStudentResponse {
     pub id: String,
     pub name: String,
     pub class_id: String,
     pub external_id: Option<String>,
+    pub roster_id: Option<String>,
+    pub notes: Option<String>,
     pub passcode: String,
     pub avatar: String,
     pub total_points: i32,
@@ -84,10 +99,12 @@ impl From<Student> for TeacherStudentResponse {
             name: student.name,
             class_id: student.class_id,
             external_id: student.external_id,
+            roster_id: student.roster_id,
+            notes: student.notes,
             passcode: student.passcode,
             avatar: student.avatar,
             total_points: student.total_points,
-            created_at: student.created_at,
+            created_at: student.created_at.to_rfc3339(),
         }
     }
 }

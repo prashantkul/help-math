@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, ChevronRight, FolderOpen, FileText, Trash2, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronRight, FolderOpen, FileText, Trash2, Edit2, Check, X, Clock, Calendar } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, Modal } from '../../components/common';
-import type { Module, Class } from '../../types';
+import type { Module, Class, Lesson } from '../../types';
 
 export default function CurriculumManager() {
   const { classId } = useParams<{ classId: string }>();
@@ -28,6 +28,14 @@ export default function CurriculumManager() {
   const [editingModule, setEditingModule] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+
+  // Schedule states
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [scheduleType, setScheduleType] = useState<'immediate' | 'scheduled' | 'manual' | 'sequential'>('immediate');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleAfterLesson, setScheduleAfterLesson] = useState('');
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !teacher) {
@@ -141,6 +149,40 @@ export default function CurriculumManager() {
     setEditingLesson(null);
     setEditName('');
   };
+
+  const handleOpenScheduleModal = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+    setScheduleType(lesson.release_type || 'immediate');
+    setScheduleDate(lesson.release_at || '');
+    setScheduleAfterLesson(lesson.release_after_lesson_id || '');
+    setShowScheduleModal(true);
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!selectedLesson) return;
+
+    setIsSavingSchedule(true);
+    const result = await apiClient.updateLessonSchedule(selectedLesson.id, {
+      release_type: scheduleType,
+      release_at: scheduleType === 'scheduled' ? scheduleDate : undefined,
+      release_after_lesson_id: scheduleType === 'sequential' ? scheduleAfterLesson : undefined,
+    });
+    setIsSavingSchedule(false);
+
+    if (result.data) {
+      setModules(modules.map(m => ({
+        ...m,
+        lessons: (m.lessons || []).map(l =>
+          l.id === selectedLesson.id ? result.data! : l
+        )
+      })));
+      setShowScheduleModal(false);
+      setSelectedLesson(null);
+    }
+  };
+
+  // Get all lessons for sequential selection
+  const allLessons = modules.flatMap(m => m.lessons || []);
 
   if (authLoading || isLoading) {
     return (
@@ -337,6 +379,17 @@ export default function CurriculumManager() {
                               )}
                             </div>
                             <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleOpenScheduleModal(lesson)}
+                                className={`p-1 rounded ${
+                                  lesson.release_type === 'immediate'
+                                    ? 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                                    : 'text-blue-600 bg-blue-50'
+                                }`}
+                                title="Schedule release"
+                              >
+                                <Clock className="w-4 h-4" />
+                              </button>
                               <Link to={`/teacher/lessons/${lesson.id}/problems`}>
                                 <Button variant="outline" size="sm">
                                   Manage Problems
@@ -484,6 +537,155 @@ export default function CurriculumManager() {
               Add Lesson
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Schedule Lesson Modal */}
+      <Modal
+        isOpen={showScheduleModal}
+        onClose={() => {
+          setShowScheduleModal(false);
+          setSelectedLesson(null);
+        }}
+        title="Schedule Lesson Release"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {selectedLesson && (
+            <>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="font-medium text-gray-800">{selectedLesson.name}</p>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Release Type
+                </label>
+
+                <button
+                  onClick={() => setScheduleType('immediate')}
+                  className={`w-full p-4 rounded-xl border text-left transition-colors ${
+                    scheduleType === 'immediate'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Check className={`w-5 h-5 ${scheduleType === 'immediate' ? 'text-blue-600' : 'text-gray-300'}`} />
+                    <div>
+                      <p className="font-medium text-gray-800">Immediate</p>
+                      <p className="text-sm text-gray-500">Students can access this lesson right away</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setScheduleType('scheduled')}
+                  className={`w-full p-4 rounded-xl border text-left transition-colors ${
+                    scheduleType === 'scheduled'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Calendar className={`w-5 h-5 ${scheduleType === 'scheduled' ? 'text-blue-600' : 'text-gray-300'}`} />
+                    <div>
+                      <p className="font-medium text-gray-800">Scheduled</p>
+                      <p className="text-sm text-gray-500">Release at a specific date and time</p>
+                    </div>
+                  </div>
+                </button>
+
+                {scheduleType === 'scheduled' && (
+                  <div className="ml-8">
+                    <input
+                      type="datetime-local"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setScheduleType('manual')}
+                  className={`w-full p-4 rounded-xl border text-left transition-colors ${
+                    scheduleType === 'manual'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Clock className={`w-5 h-5 ${scheduleType === 'manual' ? 'text-blue-600' : 'text-gray-300'}`} />
+                    <div>
+                      <p className="font-medium text-gray-800">Manual</p>
+                      <p className="text-sm text-gray-500">Hidden until you manually release it</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setScheduleType('sequential')}
+                  className={`w-full p-4 rounded-xl border text-left transition-colors ${
+                    scheduleType === 'sequential'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <ChevronRight className={`w-5 h-5 ${scheduleType === 'sequential' ? 'text-blue-600' : 'text-gray-300'}`} />
+                    <div>
+                      <p className="font-medium text-gray-800">Sequential</p>
+                      <p className="text-sm text-gray-500">Release after another lesson is completed</p>
+                    </div>
+                  </div>
+                </button>
+
+                {scheduleType === 'sequential' && (
+                  <div className="ml-8">
+                    <select
+                      value={scheduleAfterLesson}
+                      onChange={(e) => setScheduleAfterLesson(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a lesson...</option>
+                      {allLessons
+                        .filter(l => l.id !== selectedLesson.id)
+                        .map(l => (
+                          <option key={l.id} value={l.id}>{l.name}</option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowScheduleModal(false);
+                    setSelectedLesson(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={handleSaveSchedule}
+                  isLoading={isSavingSchedule}
+                  disabled={
+                    (scheduleType === 'scheduled' && !scheduleDate) ||
+                    (scheduleType === 'sequential' && !scheduleAfterLesson)
+                  }
+                >
+                  Save Schedule
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </div>

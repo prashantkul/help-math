@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     app_middleware::TeacherAuth,
-    models::{AddCoTeacher, Class, ClassResponse, ClassSettings, ClassTeacher, CoTeacherResponse, CreateClass, CreateStudent, Student, TeacherStudentResponse, UpdateClassSettings},
+    models::{AddCoTeacher, BulkCreateStudents, Class, ClassResponse, ClassSettings, ClassTeacher, CoTeacherResponse, CreateClass, CreateStudent, Student, TeacherStudentResponse, UpdateClassSettings, UpdateStudentRoster},
     AppState,
 };
 
@@ -42,7 +42,7 @@ pub async fn list_classes(
     Extension(auth): Extension<TeacherAuth>,
 ) -> Result<Json<Vec<ClassResponse>>, (StatusCode, Json<serde_json::Value>)> {
     let classes: Vec<Class> = sqlx::query_as(
-        "SELECT id, teacher_id, name, join_code, settings, created_at FROM classes WHERE teacher_id = ? ORDER BY created_at DESC"
+        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, created_at FROM classes WHERE teacher_id = $1 ORDER BY created_at DESC"
     )
     .bind(&auth.teacher_id)
     .fetch_all(&state.db)
@@ -75,13 +75,15 @@ pub async fn create_class(
     let settings = serde_json::to_string(&ClassSettings::default()).unwrap();
 
     sqlx::query(
-        "INSERT INTO classes (id, teacher_id, name, join_code, settings) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO classes (id, teacher_id, name, join_code, settings, purpose, description) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)"
     )
     .bind(&id)
     .bind(&auth.teacher_id)
     .bind(&payload.name)
     .bind(&join_code)
     .bind(&settings)
+    .bind(&payload.purpose)
+    .bind(&payload.description)
     .execute(&state.db)
     .await
     .map_err(|e| {
@@ -93,7 +95,7 @@ pub async fn create_class(
     })?;
 
     let class: Class = sqlx::query_as(
-        "SELECT id, teacher_id, name, join_code, settings, created_at FROM classes WHERE id = ?"
+        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, created_at FROM classes WHERE id = $1"
     )
     .bind(&id)
     .fetch_one(&state.db)
@@ -121,7 +123,7 @@ pub async fn get_class_students(
     }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&class_id)
     .bind(&auth.teacher_id)
@@ -143,7 +145,7 @@ pub async fn get_class_students(
     }
 
     let students: Vec<Student> = sqlx::query_as(
-        "SELECT id, name, class_id, external_id, passcode, avatar, total_points, created_at FROM students WHERE class_id = ? ORDER BY name"
+        "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at FROM students WHERE class_id = $1 ORDER BY name"
     )
     .bind(&class_id)
     .fetch_all(&state.db)
@@ -179,7 +181,7 @@ pub async fn create_student(
     }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&class_id)
     .bind(&auth.teacher_id)
@@ -204,7 +206,7 @@ pub async fn create_student(
     let passcode = generate_passcode();
 
     sqlx::query(
-        "INSERT INTO students (id, name, class_id, external_id, passcode) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO students (id, name, class_id, external_id, passcode) VALUES ($1, $2, $3, $4, $5)"
     )
     .bind(&id)
     .bind(&payload.name)
@@ -222,7 +224,7 @@ pub async fn create_student(
     })?;
 
     let student: Student = sqlx::query_as(
-        "SELECT id, name, class_id, external_id, passcode, avatar, total_points, created_at FROM students WHERE id = ?"
+        "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at FROM students WHERE id = $1"
     )
     .bind(&id)
     .fetch_one(&state.db)
@@ -250,7 +252,7 @@ pub async fn reset_student_passcode(
     }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&class_id)
     .bind(&auth.teacher_id)
@@ -273,7 +275,7 @@ pub async fn reset_student_passcode(
 
     let new_passcode = generate_passcode();
 
-    sqlx::query("UPDATE students SET passcode = ? WHERE id = ? AND class_id = ?")
+    sqlx::query("UPDATE students SET passcode = $1 WHERE id = $2 AND class_id = $3")
         .bind(&new_passcode)
         .bind(&student_id)
         .bind(&class_id)
@@ -288,7 +290,7 @@ pub async fn reset_student_passcode(
         })?;
 
     let student: Student = sqlx::query_as(
-        "SELECT id, name, class_id, external_id, passcode, avatar, total_points, created_at FROM students WHERE id = ?"
+        "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at FROM students WHERE id = $1"
     )
     .bind(&student_id)
     .fetch_optional(&state.db)
@@ -322,7 +324,7 @@ pub async fn remove_student(
     }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&class_id)
     .bind(&auth.teacher_id)
@@ -343,7 +345,7 @@ pub async fn remove_student(
         ));
     }
 
-    sqlx::query("DELETE FROM students WHERE id = ? AND class_id = ?")
+    sqlx::query("DELETE FROM students WHERE id = $1 AND class_id = $2")
         .bind(&student_id)
         .bind(&class_id)
         .execute(&state.db)
@@ -367,7 +369,7 @@ pub async fn update_class_settings(
 ) -> Result<Json<ClassResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Get current class
     let current: Option<Class> = sqlx::query_as(
-        "SELECT id, teacher_id, name, join_code, settings, created_at FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, created_at FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&class_id)
     .bind(&auth.teacher_id)
@@ -404,9 +406,15 @@ pub async fn update_class_settings(
     }
 
     let settings_json = serde_json::to_string(&settings).unwrap();
+    let name = payload.name.as_ref().unwrap_or(&current.name);
+    let purpose = payload.purpose.as_ref().or(current.purpose.as_ref());
+    let description = payload.description.as_ref().or(current.description.as_ref());
 
-    sqlx::query("UPDATE classes SET settings = ? WHERE id = ? AND teacher_id = ?")
+    sqlx::query("UPDATE classes SET settings = $1::jsonb, name = $2, purpose = $3, description = $4 WHERE id = $5 AND teacher_id = $6")
         .bind(&settings_json)
+        .bind(name)
+        .bind(purpose)
+        .bind(description)
         .bind(&class_id)
         .bind(&auth.teacher_id)
         .execute(&state.db)
@@ -420,7 +428,7 @@ pub async fn update_class_settings(
         })?;
 
     let class: Class = sqlx::query_as(
-        "SELECT id, teacher_id, name, join_code, settings, created_at FROM classes WHERE id = ?"
+        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, created_at FROM classes WHERE id = $1"
     )
     .bind(&class_id)
     .fetch_one(&state.db)
@@ -438,13 +446,13 @@ pub async fn update_class_settings(
 
 // Helper function to check if teacher can access a class (owner or co-teacher)
 async fn can_access_class(
-    db: &sqlx::SqlitePool,
+    db: &sqlx::PgPool,
     class_id: &str,
     teacher_id: &str,
 ) -> Result<bool, sqlx::Error> {
     // Check if owner
     let is_owner: Option<(i32,)> = sqlx::query_as(
-        "SELECT 1 FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT 1 FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(class_id)
     .bind(teacher_id)
@@ -457,7 +465,7 @@ async fn can_access_class(
 
     // Check if co-teacher
     let is_coteacher: Option<(i32,)> = sqlx::query_as(
-        "SELECT 1 FROM class_teachers WHERE class_id = ? AND teacher_id = ?"
+        "SELECT 1 FROM class_teachers WHERE class_id = $1 AND teacher_id = $2"
     )
     .bind(class_id)
     .bind(teacher_id)
@@ -469,12 +477,12 @@ async fn can_access_class(
 
 // Check if teacher is the owner of the class
 async fn is_class_owner(
-    db: &sqlx::SqlitePool,
+    db: &sqlx::PgPool,
     class_id: &str,
     teacher_id: &str,
 ) -> Result<bool, sqlx::Error> {
     let is_owner: Option<(i32,)> = sqlx::query_as(
-        "SELECT 1 FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT 1 FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(class_id)
     .bind(teacher_id)
@@ -518,7 +526,7 @@ pub async fn add_co_teacher(
     }
 
     let teacher: Option<TeacherInfo> = sqlx::query_as(
-        "SELECT id, email, name FROM teachers WHERE email = ?"
+        "SELECT id, email, name FROM teachers WHERE email = $1"
     )
     .bind(&payload.email)
     .fetch_optional(&state.db)
@@ -548,7 +556,7 @@ pub async fn add_co_teacher(
 
     // Check if already a co-teacher
     let already_exists: Option<(i32,)> = sqlx::query_as(
-        "SELECT 1 FROM class_teachers WHERE class_id = ? AND teacher_id = ?"
+        "SELECT 1 FROM class_teachers WHERE class_id = $1 AND teacher_id = $2"
     )
     .bind(&class_id)
     .bind(&teacher.id)
@@ -572,7 +580,7 @@ pub async fn add_co_teacher(
     let id = Uuid::new_v4().to_string();
 
     sqlx::query(
-        "INSERT INTO class_teachers (id, class_id, teacher_id, added_by) VALUES (?, ?, ?, ?)"
+        "INSERT INTO class_teachers (id, class_id, teacher_id, added_by) VALUES ($1, $2, $3, $4)"
     )
     .bind(&id)
     .bind(&class_id)
@@ -589,7 +597,7 @@ pub async fn add_co_teacher(
     })?;
 
     let coteacher: ClassTeacher = sqlx::query_as(
-        "SELECT id, class_id, teacher_id, added_by, created_at FROM class_teachers WHERE id = ?"
+        "SELECT id, class_id, teacher_id, added_by, created_at FROM class_teachers WHERE id = $1"
     )
     .bind(&id)
     .fetch_one(&state.db)
@@ -607,7 +615,7 @@ pub async fn add_co_teacher(
         teacher_id: teacher.id,
         teacher_email: teacher.email,
         teacher_name: teacher.name,
-        added_at: coteacher.created_at,
+        added_at: coteacher.created_at.to_rfc3339(),
     }))
 }
 
@@ -649,7 +657,7 @@ pub async fn get_co_teachers(
         SELECT ct.id, ct.teacher_id, t.email, t.name, ct.created_at
         FROM class_teachers ct
         JOIN teachers t ON ct.teacher_id = t.id
-        WHERE ct.class_id = ?
+        WHERE ct.class_id = $1
         ORDER BY ct.created_at
         "#
     )
@@ -697,7 +705,7 @@ pub async fn remove_co_teacher(
         ));
     }
 
-    sqlx::query("DELETE FROM class_teachers WHERE id = ? AND class_id = ?")
+    sqlx::query("DELETE FROM class_teachers WHERE id = $1 AND class_id = $2")
         .bind(&coteacher_id)
         .bind(&class_id)
         .execute(&state.db)
@@ -711,4 +719,280 @@ pub async fn remove_co_teacher(
         })?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+// Update student roster mapping (external_id, roster_id, notes)
+pub async fn update_student_roster(
+    State(state): State<AppState>,
+    Extension(auth): Extension<TeacherAuth>,
+    Path((class_id, student_id)): Path<(String, String)>,
+    Json(payload): Json<UpdateStudentRoster>,
+) -> Result<Json<TeacherStudentResponse>, (StatusCode, Json<serde_json::Value>)> {
+    // Verify teacher owns this class
+    let class_exists: Option<(String,)> = sqlx::query_as(
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
+    )
+    .bind(&class_id)
+    .bind(&auth.teacher_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to update student roster"})),
+        )
+    })?;
+
+    if class_exists.is_none() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "Class not found"})),
+        ));
+    }
+
+    // Verify student exists in this class
+    let student_exists: Option<(String,)> = sqlx::query_as(
+        "SELECT id FROM students WHERE id = $1 AND class_id = $2"
+    )
+    .bind(&student_id)
+    .bind(&class_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to update student roster"})),
+        )
+    })?;
+
+    if student_exists.is_none() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "Student not found"})),
+        ));
+    }
+
+    // Update the student roster fields
+    sqlx::query(
+        "UPDATE students SET external_id = COALESCE($1, external_id), roster_id = COALESCE($2, roster_id), notes = COALESCE($3, notes) WHERE id = $4 AND class_id = $5"
+    )
+    .bind(&payload.external_id)
+    .bind(&payload.roster_id)
+    .bind(&payload.notes)
+    .bind(&student_id)
+    .bind(&class_id)
+    .execute(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to update student roster"})),
+        )
+    })?;
+
+    let student: Student = sqlx::query_as(
+        "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at FROM students WHERE id = $1"
+    )
+    .bind(&student_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to fetch updated student"})),
+        )
+    })?;
+
+    Ok(Json(TeacherStudentResponse::from(student)))
+}
+
+// Bulk create students
+pub async fn bulk_create_students(
+    State(state): State<AppState>,
+    Extension(auth): Extension<TeacherAuth>,
+    Path(class_id): Path<String>,
+    Json(payload): Json<BulkCreateStudents>,
+) -> Result<Json<Vec<TeacherStudentResponse>>, (StatusCode, Json<serde_json::Value>)> {
+    // Verify teacher owns this class
+    let class_exists: Option<(String,)> = sqlx::query_as(
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
+    )
+    .bind(&class_id)
+    .bind(&auth.teacher_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to create students"})),
+        )
+    })?;
+
+    if class_exists.is_none() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "Class not found"})),
+        ));
+    }
+
+    if payload.students.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "At least one student is required"})),
+        ));
+    }
+
+    if payload.students.len() > 100 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Cannot create more than 100 students at once"})),
+        ));
+    }
+
+    let mut created_students = Vec::new();
+
+    for student_data in &payload.students {
+        if student_data.name.is_empty() {
+            continue; // Skip empty names
+        }
+
+        let id = Uuid::new_v4().to_string();
+        let passcode = generate_passcode();
+
+        sqlx::query(
+            "INSERT INTO students (id, name, class_id, external_id, passcode) VALUES ($1, $2, $3, $4, $5)"
+        )
+        .bind(&id)
+        .bind(&student_data.name)
+        .bind(&class_id)
+        .bind(&student_data.external_id)
+        .bind(&passcode)
+        .execute(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to create student"})),
+            )
+        })?;
+
+        let student: Student = sqlx::query_as(
+            "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at FROM students WHERE id = $1"
+        )
+        .bind(&id)
+        .fetch_one(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to fetch created student"})),
+            )
+        })?;
+
+        created_students.push(TeacherStudentResponse::from(student));
+    }
+
+    Ok(Json(created_students))
+}
+
+// Export students as JSON (CSV export can be done client-side)
+#[derive(serde::Deserialize)]
+pub struct ExportQuery {
+    pub format: Option<String>,
+}
+
+pub async fn export_students(
+    State(state): State<AppState>,
+    Extension(auth): Extension<TeacherAuth>,
+    Path(class_id): Path<String>,
+    axum::extract::Query(query): axum::extract::Query<ExportQuery>,
+) -> Result<axum::response::Response, (StatusCode, Json<serde_json::Value>)> {
+    // Verify teacher owns this class
+    #[derive(sqlx::FromRow)]
+    struct ClassInfo {
+        id: String,
+        name: String,
+    }
+
+    let class_info: Option<ClassInfo> = sqlx::query_as(
+        "SELECT id, name FROM classes WHERE id = $1 AND teacher_id = $2"
+    )
+    .bind(&class_id)
+    .bind(&auth.teacher_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to export students"})),
+        )
+    })?;
+
+    let class_info = class_info.ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "Class not found"})),
+        )
+    })?;
+
+    let students: Vec<Student> = sqlx::query_as(
+        "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at FROM students WHERE class_id = $1 ORDER BY name"
+    )
+    .bind(&class_id)
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to fetch students"})),
+        )
+    })?;
+
+    let format = query.format.as_deref().unwrap_or("json");
+
+    match format {
+        "csv" => {
+            let mut csv_content = String::from("Name,Passcode,External ID,Roster ID\n");
+            for student in &students {
+                csv_content.push_str(&format!(
+                    "{},{},{},{}\n",
+                    student.name,
+                    student.passcode,
+                    student.external_id.as_deref().unwrap_or(""),
+                    student.roster_id.as_deref().unwrap_or("")
+                ));
+            }
+
+            Ok(axum::response::Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "text/csv")
+                .header("Content-Disposition", format!("attachment; filename=\"{}_students.csv\"", class_info.name.replace(' ', "_")))
+                .body(axum::body::Body::from(csv_content))
+                .unwrap())
+        }
+        _ => {
+            // Default to JSON
+            let student_responses: Vec<TeacherStudentResponse> = students
+                .into_iter()
+                .map(TeacherStudentResponse::from)
+                .collect();
+
+            let json_body = serde_json::to_string(&student_responses).unwrap();
+
+            Ok(axum::response::Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "application/json")
+                .body(axum::body::Body::from(json_body))
+                .unwrap())
+        }
+    }
 }

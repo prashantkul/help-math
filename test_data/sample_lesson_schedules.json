@@ -1,0 +1,79 @@
+{
+  "description": "Sample lesson release scheduling configurations for testing different modes.",
+  "lessons": [
+    {
+      "id": "lesson_immediate_001",
+      "name": "Single Digit Addition",
+      "module": "Addition & Subtraction",
+      "release_type": "immediate",
+      "release_at": null,
+      "release_after_lesson_id": null,
+      "notes": "Available immediately upon creation"
+    },
+    {
+      "id": "lesson_scheduled_001",
+      "name": "Double Digit Addition",
+      "module": "Addition & Subtraction",
+      "release_type": "scheduled",
+      "release_at": "2026-01-20T09:00:00Z",
+      "release_after_lesson_id": null,
+      "notes": "Scheduled for Monday morning"
+    },
+    {
+      "id": "lesson_manual_001",
+      "name": "Introduction to Subtraction",
+      "module": "Addition & Subtraction",
+      "release_type": "manual",
+      "release_at": null,
+      "release_after_lesson_id": null,
+      "notes": "Teacher will manually release when class is ready"
+    },
+    {
+      "id": "lesson_sequential_001",
+      "name": "Subtraction Word Problems",
+      "module": "Addition & Subtraction",
+      "release_type": "sequential",
+      "release_at": null,
+      "release_after_lesson_id": "lesson_immediate_001",
+      "notes": "Unlocks after student completes 80% of Single Digit Addition"
+    },
+    {
+      "id": "lesson_sequential_002",
+      "name": "Mixed Operations",
+      "module": "Addition & Subtraction",
+      "release_type": "sequential",
+      "release_at": null,
+      "release_after_lesson_id": "lesson_sequential_001",
+      "notes": "Unlocks after Subtraction Word Problems - tests chained sequential"
+    }
+  ],
+  "test_scenarios": {
+    "sequential_80_percent_threshold": {
+      "description": "Test that lesson unlocks at 80% completion (round down)",
+      "prerequisite_lesson": "lesson_immediate_001",
+      "prerequisite_problems": 5,
+      "problems_to_complete_for_unlock": 4,
+      "notes": "80% of 5 = 4 problems (round down from 4.0)"
+    },
+    "sequential_round_down": {
+      "description": "Test round-down behavior with 3 problems",
+      "prerequisite_lesson": "lesson_test_001",
+      "prerequisite_problems": 3,
+      "problems_to_complete_for_unlock": 2,
+      "notes": "80% of 3 = 2.4, rounds down to 2 problems needed"
+    },
+    "prerequisite_deleted": {
+      "description": "Test that lesson becomes available when prerequisite is deleted",
+      "sequential_lesson": "lesson_sequential_001",
+      "action": "Delete lesson_immediate_001",
+      "expected": "lesson_sequential_001 becomes immediately available"
+    },
+    "timezone_test": {
+      "description": "Test scheduled release with teacher timezone",
+      "teacher_timezone": "America/Los_Angeles",
+      "release_at_local": "2026-01-20T09:00:00",
+      "release_at_utc": "2026-01-20T17:00:00Z",
+      "notes": "PST is UTC-8"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "description": "Sample class configurations for testing different settings and scenarios.",
+  "classes": [
+    {
+      "id": "class_001",
+      "name": "3rd Grade Math - Room 101",
+      "join_code": "96T2A2",
+      "purpose": "Core math skills for 3rd graders",
+      "description": "This class focuses on addition, subtraction, and introduction to multiplication. Students will work through scaffolded word problems to build problem-solving skills.",
+      "settings": {
+        "ell_level": 2,
+        "show_emojis": true,
+        "retry_limit": 3,
+        "point_multiplier": 1.0
+      },
+      "teacher_email": "teacher1@test.com"
+    },
+    {
+      "id": "class_002",
+      "name": "4th Grade Math - Room 205",
+      "join_code": "6Y78B7",
+      "purpose": "Advanced problem solving",
+      "description": "Fourth grade math with focus on multi-step problems, multiplication, and division.",
+      "settings": {
+        "ell_level": 3,
+        "show_emojis": false,
+        "retry_limit": 2,
+        "point_multiplier": 1.5
+      },
+      "teacher_email": "teacher2@test.com"
+    },
+    {
+      "id": "class_003",
+      "name": "ELL Math Support - Room 110",
+      "join_code": "ELL123",
+      "purpose": "Math support for English learners",
+      "description": "Simplified vocabulary and extra visual support for ELL students learning math concepts.",
+      "settings": {
+        "ell_level": 1,
+        "show_emojis": true,
+        "retry_limit": 5,
+        "point_multiplier": 1.0
+      },
+      "teacher_email": "teacher1@test.com"
+    }
+  ],
+  "test_scenarios": {
+    "class_with_max_purpose": {
+      "purpose": "This is a 200 character purpose field test. It should accept exactly this many characters. Adding more text here to reach the limit. Almost there now. Just a few more characters needed here!!"
+    },
+    "class_with_max_description": {
+      "description": "This is a test of the 1000 character description field limit. The description should be able to contain detailed information about the class, learning objectives, and any other relevant notes for the teacher. This field is teacher-only and will not be shown to students. Teachers can use this space to document their curriculum plans, note any special accommodations needed for students, or keep track of their teaching goals for the semester. The description field supports longer text to give teachers flexibility in how they organize their class information. This should be close to the 1000 character limit now. Adding a bit more text to ensure we reach the maximum. Here we go with some additional content to fill up the remaining space in this description field test case."
+    }
+  }
+}

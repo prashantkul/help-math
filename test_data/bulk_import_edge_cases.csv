@@ -1,0 +1,9 @@
+external_id,roster_id,notes
+STU001,1,This should be skipped - duplicate external_id
+STU020,20,Valid new student
+,21,No external ID - should work
+STU022,,No roster ID - should work
+,,No external_id or roster_id - should work
+STU025,25,Student with special chars: José García
+STU026,26,Student with emoji note 📚
+STU027,27,Very long note that tests the limits of what can be stored in the notes field - this is a longer note to ensure the system handles it correctly

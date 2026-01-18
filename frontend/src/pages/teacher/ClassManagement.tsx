@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, UserX, Copy, Check, Settings, Plus, RefreshCw, Key, Users, X, Mail } from 'lucide-react';
+import { ArrowLeft, Trash2, UserX, Copy, Check, Settings, Plus, RefreshCw, Key, Users, X, Mail, Upload, Download, FileText, Edit2 } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, Modal } from '../../components/common';
@@ -35,6 +35,23 @@ export default function ClassManagement() {
   const [newCoTeacherEmail, setNewCoTeacherEmail] = useState('');
   const [isAddingCoTeacher, setIsAddingCoTeacher] = useState(false);
   const [coTeacherError, setCoTeacherError] = useState('');
+
+  // Bulk import state
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [bulkCount, setBulkCount] = useState(5);
+  const [bulkPrefix, setBulkPrefix] = useState('Student');
+  const [isBulkCreating, setIsBulkCreating] = useState(false);
+  const [bulkResult, setBulkResult] = useState<TeacherStudent[] | null>(null);
+
+  // Roster mapping state
+  const [showRosterModal, setShowRosterModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<TeacherStudent | null>(null);
+  const [rosterIdInput, setRosterIdInput] = useState('');
+  const [notesInput, setNotesInput] = useState('');
+  const [isSavingRoster, setIsSavingRoster] = useState(false);
+
+  // Export state
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !teacher) {
@@ -161,6 +178,74 @@ export default function ClassManagement() {
     setCoTeachers(coTeachers.filter((ct) => ct.id !== coteacherId));
   };
 
+  const handleBulkCreate = async () => {
+    if (!classId || bulkCount < 1) return;
+
+    setIsBulkCreating(true);
+    const studentsToCreate = Array.from({ length: bulkCount }, (_, i) => ({
+      name: `${bulkPrefix} ${i + 1}`,
+    }));
+
+    const result = await apiClient.bulkCreateStudents(classId, studentsToCreate);
+    setIsBulkCreating(false);
+
+    if (result.data) {
+      setBulkResult(result.data);
+      setStudents([...students, ...result.data]);
+    }
+  };
+
+  const handleExportCredentials = async (format: 'csv' | 'json') => {
+    if (!classId) return;
+
+    setIsExporting(true);
+    const result = await apiClient.exportStudents(classId, format);
+    setIsExporting(false);
+
+    if (result.data) {
+      let blob: Blob;
+      if (format === 'csv') {
+        // For CSV, the API returns a Blob directly
+        blob = result.data as unknown as Blob;
+      } else {
+        // For JSON, we need to stringify the array
+        blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `students-${classData?.name || 'class'}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleOpenRosterModal = (student: TeacherStudent) => {
+    setSelectedStudent(student);
+    setRosterIdInput(student.roster_id || '');
+    setNotesInput(student.notes || '');
+    setShowRosterModal(true);
+  };
+
+  const handleSaveRoster = async () => {
+    if (!classId || !selectedStudent) return;
+
+    setIsSavingRoster(true);
+    const result = await apiClient.updateStudentRoster(classId, selectedStudent.id, {
+      roster_id: rosterIdInput.trim() || undefined,
+      notes: notesInput.trim() || undefined,
+    });
+    setIsSavingRoster(false);
+
+    if (result.data) {
+      setStudents(students.map((s) => (s.id === selectedStudent.id ? result.data! : s)));
+      setShowRosterModal(false);
+      setSelectedStudent(null);
+    }
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -230,10 +315,28 @@ export default function ClassManagement() {
           <h2 className="text-lg font-bold text-gray-800">
             Students ({students.length})
           </h2>
-          <Button variant="primary" onClick={() => setShowAddStudentModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Student
-          </Button>
+          <div className="flex gap-2">
+            {students.length > 0 && (
+              <div className="relative group">
+                <Button
+                  variant="outline"
+                  onClick={() => handleExportCredentials('csv')}
+                  disabled={isExporting}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            )}
+            <Button variant="outline" onClick={() => setShowBulkImportModal(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Bulk Add
+            </Button>
+            <Button variant="primary" onClick={() => setShowAddStudentModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Student
+            </Button>
+          </div>
         </div>
 
         {students.length === 0 ? (
@@ -298,6 +401,15 @@ export default function ClassManagement() {
                       title="Reset passcode"
                     >
                       <RefreshCw className="w-4 h-4" />
+                    </Button>
+                    {/* Edit Roster */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleOpenRosterModal(student)}
+                      title="Edit roster info"
+                    >
+                      <Edit2 className="w-4 h-4" />
                     </Button>
                     {/* View Progress */}
                     <Link to={`/teacher/analytics/${classId}?student=${student.id}`}>
@@ -542,6 +654,170 @@ export default function ClassManagement() {
               Remove
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Bulk Import Modal */}
+      <Modal
+        isOpen={showBulkImportModal}
+        onClose={() => {
+          setShowBulkImportModal(false);
+          setBulkResult(null);
+          setBulkCount(5);
+          setBulkPrefix('Student');
+        }}
+        title="Bulk Add Students"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {bulkResult ? (
+            <>
+              <div className="bg-green-50 text-green-700 p-4 rounded-lg text-center">
+                <Check className="w-8 h-8 mx-auto mb-2" />
+                <p className="font-medium">Created {bulkResult.length} students!</p>
+              </div>
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {bulkResult.map((student) => (
+                  <div
+                    key={student.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <span className="font-medium">{student.name}</span>
+                    <span className="font-mono text-sm bg-amber-100 text-amber-800 px-2 py-1 rounded">
+                      {student.passcode}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => handleExportCredentials('csv')}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export All Credentials
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-600">
+                Quickly create multiple student accounts at once. Each student will receive a unique passcode.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Number of Students
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={bulkCount}
+                  onChange={(e) => setBulkCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name Prefix
+                </label>
+                <input
+                  type="text"
+                  value={bulkPrefix}
+                  onChange={(e) => setBulkPrefix(e.target.value)}
+                  placeholder="e.g., Student"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Students will be named: {bulkPrefix} 1, {bulkPrefix} 2, etc.
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowBulkImportModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={handleBulkCreate}
+                  isLoading={isBulkCreating}
+                  disabled={bulkCount < 1 || isBulkCreating}
+                >
+                  Create {bulkCount} Students
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
+
+      {/* Roster Mapping Modal */}
+      <Modal
+        isOpen={showRosterModal}
+        onClose={() => {
+          setShowRosterModal(false);
+          setSelectedStudent(null);
+        }}
+        title="Edit Student Roster Info"
+      >
+        <div className="space-y-4">
+          {selectedStudent && (
+            <>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="font-medium text-gray-800">{selectedStudent.name}</p>
+                <p className="text-sm text-gray-500">External ID: {selectedStudent.external_id || 'Not set'}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Roster ID
+                </label>
+                <input
+                  type="text"
+                  value={rosterIdInput}
+                  onChange={(e) => setRosterIdInput(e.target.value)}
+                  placeholder="e.g., SIS-12345"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  ID from your student information system
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={notesInput}
+                  onChange={(e) => setNotesInput(e.target.value)}
+                  placeholder="Add any notes about this student..."
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowRosterModal(false);
+                    setSelectedStudent(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={handleSaveRoster}
+                  isLoading={isSavingRoster}
+                >
+                  Save
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </div>

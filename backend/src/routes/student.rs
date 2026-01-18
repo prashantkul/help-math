@@ -23,7 +23,7 @@ pub async fn get_student_assignments(
     #[derive(sqlx::FromRow)]
     struct StudentInfo { class_id: String }
 
-    let student: StudentInfo = sqlx::query_as("SELECT class_id FROM students WHERE id = ?")
+    let student: StudentInfo = sqlx::query_as("SELECT class_id FROM students WHERE id = $1")
         .bind(&auth.student_id)
         .fetch_one(&state.db)
         .await
@@ -33,7 +33,7 @@ pub async fn get_student_assignments(
         })?;
 
     let assignments: Vec<Assignment> = sqlx::query_as(
-        "SELECT id, class_id, title, week_start, week_end, problem_ids, created_at FROM assignments WHERE class_id = ? ORDER BY created_at DESC"
+        "SELECT id, class_id, title, week_start, week_end, problem_ids::text, created_at FROM assignments WHERE class_id = $1 ORDER BY created_at DESC"
     )
     .bind(&student.class_id)
     .fetch_all(&state.db)
@@ -49,7 +49,7 @@ pub async fn get_student_assignments(
         let mut problems = Vec::new();
         for pid in &problem_ids {
             if let Ok(Some(p)) = sqlx::query_as::<_, Problem>(
-                "SELECT id, class_id, original_text, simplified_text, skill_tags, difficulty, is_published, week_number, scene_emoji, created_at FROM problems WHERE id = ? AND is_published = 1"
+                "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, created_at FROM problems WHERE id = $1 AND is_published = true"
             ).bind(pid).fetch_optional(&state.db).await {
                 problems.push(ProblemResponse::from_problem(p, None));
             }
@@ -66,7 +66,7 @@ pub async fn get_student_problem(
     Path(problem_id): Path<String>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
     let problem: Option<Problem> = sqlx::query_as(
-        "SELECT p.id, p.class_id, p.original_text, p.simplified_text, p.skill_tags, p.difficulty, p.is_published, p.week_number, p.scene_emoji, p.created_at FROM problems p JOIN students s ON p.class_id = s.class_id WHERE p.id = ? AND s.id = ? AND p.is_published = 1"
+        "SELECT p.id, p.class_id, p.lesson_id, p.original_text, p.simplified_text, p.skill_tags::text, p.difficulty, p.is_published, p.state, p.week_number, p.scene_emoji, p.created_at FROM problems p JOIN students s ON p.class_id = s.class_id WHERE p.id = $1 AND s.id = $2 AND p.is_published = true"
     )
     .bind(&problem_id)
     .bind(&auth.student_id)
@@ -80,7 +80,7 @@ pub async fn get_student_problem(
     let problem = problem.ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))))?;
 
     let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = ? ORDER BY step_order"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
     )
     .bind(&problem_id)
     .fetch_all(&state.db)
@@ -89,7 +89,7 @@ pub async fn get_student_problem(
 
     // Create progress if not exists
     let progress_id = Uuid::new_v4().to_string();
-    sqlx::query("INSERT OR IGNORE INTO student_progress (id, student_id, problem_id) VALUES (?, ?, ?)")
+    sqlx::query("INSERT INTO student_progress (id, student_id, problem_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
         .bind(&progress_id)
         .bind(&auth.student_id)
         .bind(&problem_id)
@@ -107,7 +107,7 @@ pub async fn submit_step_attempt(
     Json(payload): Json<SubmitAttempt>,
 ) -> Result<Json<AttemptResult>, (StatusCode, Json<serde_json::Value>)> {
     let step: Option<ScaffoldStep> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options, hints, points, emoji_hint, created_at FROM scaffold_steps WHERE id = ? AND problem_id = ?"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE id = $1 AND problem_id = $2"
     )
     .bind(&payload.step_id)
     .bind(&problem_id)
@@ -122,7 +122,7 @@ pub async fn submit_step_attempt(
 
     // Get or create progress
     let progress_id = Uuid::new_v4().to_string();
-    sqlx::query("INSERT OR IGNORE INTO student_progress (id, student_id, problem_id) VALUES (?, ?, ?)")
+    sqlx::query("INSERT INTO student_progress (id, student_id, problem_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
         .bind(&progress_id)
         .bind(&auth.student_id)
         .bind(&problem_id)
@@ -131,7 +131,7 @@ pub async fn submit_step_attempt(
         .ok();
 
     let progress: StudentProgress = sqlx::query_as(
-        "SELECT id, student_id, problem_id, current_step, is_complete, total_points_earned, stars_earned, started_at, completed_at FROM student_progress WHERE student_id = ? AND problem_id = ?"
+        "SELECT id, student_id, problem_id, current_step, is_complete, total_points_earned, stars_earned, started_at, completed_at FROM student_progress WHERE student_id = $1 AND problem_id = $2"
     )
     .bind(&auth.student_id)
     .bind(&problem_id)
@@ -146,7 +146,7 @@ pub async fn submit_step_attempt(
     struct Count { count: i32 }
 
     let attempt_count: i32 = sqlx::query_as::<_, Count>(
-        "SELECT COUNT(*) as count FROM step_attempts WHERE student_id = ? AND step_id = ? AND progress_id = ?"
+        "SELECT COUNT(*) as count FROM step_attempts WHERE student_id = $1 AND step_id = $2 AND progress_id = $3"
     )
     .bind(&auth.student_id)
     .bind(&payload.step_id)
@@ -172,7 +172,7 @@ pub async fn submit_step_attempt(
     let attempt_id = Uuid::new_v4().to_string();
     let answer_json = serde_json::to_string(&payload.answer).unwrap();
     sqlx::query(
-        "INSERT INTO step_attempts (id, student_id, step_id, progress_id, attempt_number, answer_given, is_correct, points_earned, time_spent_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO step_attempts (id, student_id, step_id, progress_id, attempt_number, answer_given, is_correct, points_earned, time_spent_seconds) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
     )
     .bind(&attempt_id)
     .bind(&auth.student_id)
@@ -180,7 +180,7 @@ pub async fn submit_step_attempt(
     .bind(&progress.id)
     .bind(attempt_number)
     .bind(&answer_json)
-    .bind(if is_correct { 1 } else { 0 })
+    .bind(is_correct)
     .bind(points_earned)
     .bind(payload.time_spent_seconds)
     .execute(&state.db)
@@ -189,7 +189,7 @@ pub async fn submit_step_attempt(
 
     // Update progress if correct
     if is_correct {
-        let total_steps: i32 = sqlx::query_as::<_, Count>("SELECT COUNT(*) as count FROM scaffold_steps WHERE problem_id = ?")
+        let total_steps: i32 = sqlx::query_as::<_, Count>("SELECT COUNT(*) as count FROM scaffold_steps WHERE problem_id = $1")
             .bind(&problem_id)
             .fetch_one(&state.db)
             .await
@@ -202,10 +202,10 @@ pub async fn submit_step_attempt(
 
         let stars = if is_complete { 3 } else { 0 }; // Simplified star calculation
 
-        sqlx::query("UPDATE student_progress SET current_step = ?, total_points_earned = ?, is_complete = ?, stars_earned = ? WHERE id = ?")
+        sqlx::query("UPDATE student_progress SET current_step = $1, total_points_earned = $2, is_complete = $3, stars_earned = $4 WHERE id = $5")
             .bind(new_step)
             .bind(new_total)
-            .bind(if is_complete { 1 } else { 0 })
+            .bind(is_complete)
             .bind(stars)
             .bind(&progress.id)
             .execute(&state.db)
@@ -213,7 +213,7 @@ pub async fn submit_step_attempt(
             .ok();
 
         if points_earned > 0 {
-            sqlx::query("UPDATE students SET total_points = total_points + ? WHERE id = ?")
+            sqlx::query("UPDATE students SET total_points = total_points + $1 WHERE id = $2")
                 .bind(points_earned)
                 .bind(&auth.student_id)
                 .execute(&state.db)
@@ -242,7 +242,7 @@ pub async fn get_student_progress(
     Extension(auth): Extension<StudentAuth>,
 ) -> Result<Json<StudentOverallProgress>, (StatusCode, Json<serde_json::Value>)> {
     let progress: Vec<StudentProgress> = sqlx::query_as(
-        "SELECT id, student_id, problem_id, current_step, is_complete, total_points_earned, stars_earned, started_at, completed_at FROM student_progress WHERE student_id = ?"
+        "SELECT id, student_id, problem_id, current_step, is_complete, total_points_earned, stars_earned, started_at, completed_at FROM student_progress WHERE student_id = $1"
     )
     .bind(&auth.student_id)
     .fetch_all(&state.db)
@@ -255,7 +255,7 @@ pub async fn get_student_progress(
     #[derive(sqlx::FromRow)]
     struct Points { total_points: i32 }
 
-    let student: Points = sqlx::query_as("SELECT total_points FROM students WHERE id = ?")
+    let student: Points = sqlx::query_as("SELECT total_points FROM students WHERE id = $1")
         .bind(&auth.student_id)
         .fetch_one(&state.db)
         .await
@@ -275,7 +275,7 @@ pub async fn get_student_profile(
     Extension(auth): Extension<StudentAuth>,
 ) -> Result<Json<StudentResponse>, (StatusCode, Json<serde_json::Value>)> {
     let student: Student = sqlx::query_as(
-        "SELECT id, name, class_id, avatar, total_points, created_at FROM students WHERE id = ?"
+        "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at FROM students WHERE id = $1"
     )
     .bind(&auth.student_id)
     .fetch_one(&state.db)
@@ -293,7 +293,7 @@ pub async fn update_student_avatar(
     Extension(auth): Extension<StudentAuth>,
     Json(payload): Json<UpdateStudentAvatar>,
 ) -> Result<Json<StudentResponse>, (StatusCode, Json<serde_json::Value>)> {
-    sqlx::query("UPDATE students SET avatar = ? WHERE id = ?")
+    sqlx::query("UPDATE students SET avatar = $1 WHERE id = $2")
         .bind(&payload.avatar)
         .bind(&auth.student_id)
         .execute(&state.db)
@@ -304,7 +304,7 @@ pub async fn update_student_avatar(
         })?;
 
     let student: Student = sqlx::query_as(
-        "SELECT id, name, class_id, avatar, total_points, created_at FROM students WHERE id = ?"
+        "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at FROM students WHERE id = $1"
     )
     .bind(&auth.student_id)
     .fetch_one(&state.db)

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -8,10 +9,12 @@ pub struct Class {
     pub name: String,
     pub join_code: String,
     pub settings: String, // JSON stored as text
-    pub created_at: String,
+    pub purpose: Option<String>,
+    pub description: Option<String>,
+    pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClassSettings {
     #[serde(default = "default_ell_level")]
     pub ell_level: i32,
@@ -21,6 +24,17 @@ pub struct ClassSettings {
     pub retry_limit: i32,
     #[serde(default = "default_point_multiplier")]
     pub point_multiplier: f32,
+}
+
+impl Default for ClassSettings {
+    fn default() -> Self {
+        Self {
+            ell_level: default_ell_level(),
+            show_emojis: default_true(),
+            retry_limit: default_retry_limit(),
+            point_multiplier: default_point_multiplier(),
+        }
+    }
 }
 
 fn default_ell_level() -> i32 {
@@ -42,6 +56,8 @@ fn default_point_multiplier() -> f32 {
 #[derive(Debug, Deserialize)]
 pub struct CreateClass {
     pub name: String,
+    pub purpose: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,6 +66,9 @@ pub struct UpdateClassSettings {
     pub show_emojis: Option<bool>,
     pub retry_limit: Option<i32>,
     pub point_multiplier: Option<f32>,
+    pub name: Option<String>,
+    pub purpose: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -59,6 +78,8 @@ pub struct ClassResponse {
     pub name: String,
     pub join_code: String,
     pub settings: ClassSettings,
+    pub purpose: Option<String>,
+    pub description: Option<String>,
     pub created_at: String,
 }
 
@@ -76,7 +97,9 @@ impl From<Class> for ClassResponse {
             name: class.name.clone(),
             join_code: class.join_code.clone(),
             settings: class.get_settings(),
-            created_at: class.created_at.clone(),
+            purpose: class.purpose.clone(),
+            description: class.description.clone(),
+            created_at: class.created_at.to_rfc3339(),
         }
     }
 }

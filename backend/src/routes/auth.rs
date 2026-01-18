@@ -1,10 +1,12 @@
 use axum::{extract::State, http::StatusCode, Json};
+use chrono::{Duration, Utc};
 use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
     models::{
-        AuthResponse, CreateTeacher, JoinClass, LoginTeacher, Student, StudentJoinResponse,
+        AuthResponse, CreateTeacher, ForgotPasswordRequest, ForgotPasswordResponse,
+        JoinClass, LoginTeacher, ResetPasswordRequest, Student, StudentJoinResponse,
         StudentResponse, Teacher, TeacherResponse,
     },
     AppState,
@@ -52,7 +54,7 @@ pub async fn register_teacher(
 
     // Insert teacher
     sqlx::query(
-        "INSERT INTO teachers (id, email, password_hash, name) VALUES (?, ?, ?, ?)"
+        "INSERT INTO teachers (id, email, password_hash, name) VALUES ($1, $2, $3, $4)"
     )
     .bind(&id)
     .bind(&payload.email)
@@ -77,7 +79,7 @@ pub async fn register_teacher(
 
     // Fetch the created teacher
     let teacher: Teacher = sqlx::query_as(
-        "SELECT id, email, password_hash, name, created_at FROM teachers WHERE id = ?"
+        "SELECT id, email, password_hash, name, created_at FROM teachers WHERE id = $1"
     )
     .bind(&id)
     .fetch_one(&state.db)
@@ -115,7 +117,7 @@ pub async fn login_teacher(
 ) -> Result<Json<AuthResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Find teacher
     let teacher: Teacher = sqlx::query_as(
-        "SELECT id, email, password_hash, name, created_at FROM teachers WHERE email = ?"
+        "SELECT id, email, password_hash, name, created_at FROM teachers WHERE email = $1"
     )
     .bind(&payload.email)
     .fetch_optional(&state.db)
@@ -198,7 +200,7 @@ pub async fn student_join(
     }
 
     let class: ClassInfo = sqlx::query_as(
-        "SELECT id, name FROM classes WHERE join_code = ?"
+        "SELECT id, name FROM classes WHERE join_code = $1"
     )
     .bind(payload.class_code.to_uppercase())
     .fetch_optional(&state.db)
@@ -219,8 +221,8 @@ pub async fn student_join(
 
     // Find student by passcode in this class
     let student: Student = sqlx::query_as(
-        "SELECT id, name, class_id, external_id, passcode, avatar, total_points, created_at
-         FROM students WHERE class_id = ? AND passcode = ?"
+        "SELECT id, name, class_id, external_id, roster_id, notes, passcode, avatar, total_points, created_at
+         FROM students WHERE class_id = $1 AND passcode = $2"
     )
     .bind(&class.id)
     .bind(&payload.passcode)
@@ -257,4 +259,192 @@ pub async fn student_join(
         class_name: class.name,
         session_token: token,
     }))
+}
+
+// Password reset - generate token
+pub async fn forgot_password(
+    State(state): State<AppState>,
+    Json(payload): Json<ForgotPasswordRequest>,
+) -> Result<Json<ForgotPasswordResponse>, (StatusCode, Json<serde_json::Value>)> {
+    if payload.email.is_empty() || !payload.email.contains('@') {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Invalid email address"})),
+        ));
+    }
+
+    // Find teacher by email
+    #[derive(sqlx::FromRow)]
+    struct TeacherInfo {
+        id: String,
+    }
+
+    let teacher: Option<TeacherInfo> = sqlx::query_as(
+        "SELECT id FROM teachers WHERE email = $1"
+    )
+    .bind(&payload.email)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to process request"})),
+        )
+    })?;
+
+    // Always return success to prevent email enumeration
+    if teacher.is_none() {
+        return Ok(Json(ForgotPasswordResponse {
+            message: "If an account with that email exists, a password reset link will be sent.".to_string(),
+            reset_link: None,
+        }));
+    }
+
+    let teacher = teacher.unwrap();
+
+    // Invalidate any existing unused tokens for this teacher
+    sqlx::query("UPDATE password_reset_tokens SET used = true WHERE teacher_id = $1 AND used = false")
+        .bind(&teacher.id)
+        .execute(&state.db)
+        .await
+        .ok();
+
+    // Generate reset token
+    let id = Uuid::new_v4().to_string();
+    let token = Uuid::new_v4().to_string();
+    let expires_at = (Utc::now() + Duration::hours(1)).format("%Y-%m-%d %H:%M:%S").to_string();
+
+    sqlx::query(
+        "INSERT INTO password_reset_tokens (id, teacher_id, token, expires_at) VALUES ($1, $2, $3, $4)"
+    )
+    .bind(&id)
+    .bind(&teacher.id)
+    .bind(&token)
+    .bind(&expires_at)
+    .execute(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to create reset token"})),
+        )
+    })?;
+
+    // In a real app, you would send an email here
+    // For demo purposes, we return the reset link directly
+    let reset_link = format!("/reset-password?token={}", token);
+
+    Ok(Json(ForgotPasswordResponse {
+        message: "If an account with that email exists, a password reset link will be sent.".to_string(),
+        reset_link: Some(reset_link),
+    }))
+}
+
+// Password reset - use token to change password
+pub async fn reset_password(
+    State(state): State<AppState>,
+    Json(payload): Json<ResetPasswordRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    if payload.token.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Reset token is required"})),
+        ));
+    }
+
+    if payload.password.len() < 6 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Password must be at least 6 characters"})),
+        ));
+    }
+
+    // Find valid token
+    #[derive(sqlx::FromRow)]
+    struct TokenInfo {
+        id: String,
+        teacher_id: String,
+        expires_at: String,
+    }
+
+    let token_info: Option<TokenInfo> = sqlx::query_as(
+        "SELECT id, teacher_id, expires_at FROM password_reset_tokens WHERE token = $1 AND used = false"
+    )
+    .bind(&payload.token)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to process request"})),
+        )
+    })?;
+
+    let token_info = token_info.ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Invalid or expired reset token"})),
+        )
+    })?;
+
+    // Check if token is expired
+    let expires_at = chrono::NaiveDateTime::parse_from_str(&token_info.expires_at, "%Y-%m-%d %H:%M:%S")
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to parse expiration"})),
+            )
+        })?;
+
+    if Utc::now().naive_utc() > expires_at {
+        // Mark token as used
+        sqlx::query("UPDATE password_reset_tokens SET used = true WHERE id = $1")
+            .bind(&token_info.id)
+            .execute(&state.db)
+            .await
+            .ok();
+
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "Reset token has expired"})),
+        ));
+    }
+
+    // Hash new password
+    let password_hash = state
+        .auth_service
+        .hash_password(&payload.password)
+        .map_err(|e| {
+            tracing::error!("Failed to hash password: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to reset password"})),
+            )
+        })?;
+
+    // Update password
+    sqlx::query("UPDATE teachers SET password_hash = $1 WHERE id = $2")
+        .bind(&password_hash)
+        .bind(&token_info.teacher_id)
+        .execute(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to reset password"})),
+            )
+        })?;
+
+    // Mark token as used
+    sqlx::query("UPDATE password_reset_tokens SET used = true WHERE id = $1")
+        .bind(&token_info.id)
+        .execute(&state.db)
+        .await
+        .ok();
+
+    Ok(Json(json!({"message": "Password has been reset successfully"})))
 }

@@ -1,4 +1,4 @@
--- Math Scaffold App - Initial Database Schema (SQLite)
+-- Math Scaffold App - Initial Database Schema (PostgreSQL)
 
 -- Teachers table
 CREATE TABLE IF NOT EXISTS teachers (
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_teachers_email ON teachers(email);
@@ -17,8 +17,10 @@ CREATE TABLE IF NOT EXISTS classes (
     teacher_id TEXT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     join_code TEXT UNIQUE NOT NULL,
-    settings TEXT DEFAULT '{"ell_level": 2, "show_emojis": true, "retry_limit": 3, "point_multiplier": 1}' NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL
+    settings JSONB DEFAULT '{"ell_level": 2, "show_emojis": true, "retry_limit": 3, "point_multiplier": 1}'::jsonb NOT NULL,
+    purpose TEXT,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_classes_teacher_id ON classes(teacher_id);
@@ -30,10 +32,12 @@ CREATE TABLE IF NOT EXISTS students (
     name TEXT NOT NULL,
     class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
     external_id TEXT,  -- Teacher's internal student ID for roster correlation
+    roster_id TEXT,    -- Teacher's roster reference
+    notes TEXT,        -- Teacher notes about student
     passcode TEXT NOT NULL,  -- Unique passcode for student to join (e.g., "bear-7823")
     avatar TEXT DEFAULT 'bear' NOT NULL,
     total_points INTEGER DEFAULT 0 NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(class_id, passcode)  -- Passcode unique within class
 );
 
@@ -44,14 +48,16 @@ CREATE INDEX IF NOT EXISTS idx_students_passcode ON students(class_id, passcode)
 CREATE TABLE IF NOT EXISTS problems (
     id TEXT PRIMARY KEY NOT NULL,
     class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    lesson_id TEXT,  -- Added later, references lessons table
     original_text TEXT NOT NULL,
     simplified_text TEXT,
-    skill_tags TEXT DEFAULT '[]' NOT NULL,
+    skill_tags JSONB DEFAULT '[]'::jsonb NOT NULL,
     difficulty INTEGER DEFAULT 1 NOT NULL CHECK (difficulty BETWEEN 1 AND 3),
-    is_published INTEGER DEFAULT 0 NOT NULL,
+    is_published BOOLEAN DEFAULT FALSE NOT NULL,
+    state TEXT DEFAULT 'draft' NOT NULL,  -- draft, scaffolded, reviewed, published
     week_number INTEGER,
     scene_emoji TEXT,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_problems_class_id ON problems(class_id);
@@ -67,11 +73,11 @@ CREATE TABLE IF NOT EXISTS scaffold_steps (
     simplified_text TEXT,
     correct_answer TEXT NOT NULL,
     answer_type TEXT NOT NULL,
-    options TEXT,
-    hints TEXT DEFAULT '[]' NOT NULL,
+    options JSONB,
+    hints JSONB DEFAULT '[]'::jsonb NOT NULL,
     points INTEGER DEFAULT 10 NOT NULL,
     emoji_hint TEXT,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(problem_id, step_order)
 );
 
@@ -83,11 +89,11 @@ CREATE TABLE IF NOT EXISTS student_progress (
     student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
     problem_id TEXT NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
     current_step INTEGER DEFAULT 0 NOT NULL,
-    is_complete INTEGER DEFAULT 0 NOT NULL,
+    is_complete BOOLEAN DEFAULT FALSE NOT NULL,
     total_points_earned INTEGER DEFAULT 0 NOT NULL,
     stars_earned INTEGER DEFAULT 0 NOT NULL,
-    started_at TEXT DEFAULT (datetime('now')) NOT NULL,
-    completed_at TEXT,
+    started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    completed_at TIMESTAMPTZ,
     UNIQUE(student_id, problem_id)
 );
 
@@ -102,10 +108,10 @@ CREATE TABLE IF NOT EXISTS step_attempts (
     progress_id TEXT NOT NULL REFERENCES student_progress(id) ON DELETE CASCADE,
     attempt_number INTEGER NOT NULL,
     answer_given TEXT NOT NULL,
-    is_correct INTEGER NOT NULL,
+    is_correct BOOLEAN NOT NULL,
     points_earned INTEGER DEFAULT 0 NOT NULL,
     time_spent_seconds INTEGER,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_step_attempts_student_id ON step_attempts(student_id);
@@ -117,10 +123,10 @@ CREATE TABLE IF NOT EXISTS assignments (
     id TEXT PRIMARY KEY NOT NULL,
     class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
-    week_start TEXT,
-    week_end TEXT,
-    problem_ids TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL
+    week_start DATE,
+    week_end DATE,
+    problem_ids JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_assignments_class_id ON assignments(class_id);
@@ -131,7 +137,7 @@ CREATE TABLE IF NOT EXISTS class_teachers (
     class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
     teacher_id TEXT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
     added_by TEXT NOT NULL REFERENCES teachers(id),
-    created_at TEXT DEFAULT (datetime('now')) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(class_id, teacher_id)
 );
 

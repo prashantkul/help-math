@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -9,7 +10,7 @@ pub struct Assignment {
     pub week_start: Option<String>,
     pub week_end: Option<String>,
     pub problem_ids: String, // JSON array stored as text
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -42,7 +43,7 @@ impl AssignmentResponse {
             week_start: assignment.week_start,
             week_end: assignment.week_end,
             problem_ids: serde_json::from_str(&assignment.problem_ids).unwrap_or_default(),
-            created_at: assignment.created_at,
+            created_at: assignment.created_at.to_rfc3339(),
             problems,
         }
     }

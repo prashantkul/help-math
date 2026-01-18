@@ -20,7 +20,7 @@ pub async fn get_class_analytics(
     struct ClassExists { id: String }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&class_id)
     .bind(&auth.teacher_id)
@@ -39,7 +39,7 @@ pub async fn get_class_analytics(
     struct Count { count: i64 }
 
     let total_students: i64 = sqlx::query_as::<_, Count>(
-        "SELECT COUNT(*) as count FROM students WHERE class_id = ?"
+        "SELECT COUNT(*) as count FROM students WHERE class_id = $1"
     )
     .bind(&class_id)
     .fetch_one(&state.db)
@@ -48,7 +48,7 @@ pub async fn get_class_analytics(
     .unwrap_or(0);
 
     let total_problems: i64 = sqlx::query_as::<_, Count>(
-        "SELECT COUNT(*) as count FROM problems WHERE class_id = ? AND is_published = 1"
+        "SELECT COUNT(*) as count FROM problems WHERE class_id = $1 AND is_published = true"
     )
     .bind(&class_id)
     .fetch_one(&state.db)
@@ -60,7 +60,7 @@ pub async fn get_class_analytics(
     struct AvgPoints { avg_points: Option<f64> }
 
     let avg_points = sqlx::query_as::<_, AvgPoints>(
-        "SELECT AVG(total_points) as avg_points FROM students WHERE class_id = ?"
+        "SELECT AVG(total_points) as avg_points FROM students WHERE class_id = $1"
     )
     .bind(&class_id)
     .fetch_one(&state.db)
@@ -88,7 +88,7 @@ pub async fn get_student_analytics(
     struct ClassExists { id: String }
 
     let class_exists: Option<ClassExists> = sqlx::query_as(
-        "SELECT id FROM classes WHERE id = ? AND teacher_id = ?"
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2"
     )
     .bind(&class_id)
     .bind(&auth.teacher_id)
@@ -107,7 +107,7 @@ pub async fn get_student_analytics(
     struct StudentInfo { name: String, total_points: i32 }
 
     let student: Option<StudentInfo> = sqlx::query_as(
-        "SELECT name, total_points FROM students WHERE id = ? AND class_id = ?"
+        "SELECT name, total_points FROM students WHERE id = $1 AND class_id = $2"
     )
     .bind(&student_id)
     .bind(&class_id)
@@ -124,7 +124,7 @@ pub async fn get_student_analytics(
     struct Count { count: i64 }
 
     let total_attempted: i64 = sqlx::query_as::<_, Count>(
-        "SELECT COUNT(DISTINCT problem_id) as count FROM student_progress WHERE student_id = ?"
+        "SELECT COUNT(DISTINCT problem_id) as count FROM student_progress WHERE student_id = $1"
     )
     .bind(&student_id)
     .fetch_one(&state.db)
@@ -133,7 +133,7 @@ pub async fn get_student_analytics(
     .unwrap_or(0);
 
     let total_completed: i64 = sqlx::query_as::<_, Count>(
-        "SELECT COUNT(*) as count FROM student_progress WHERE student_id = ? AND is_complete = 1"
+        "SELECT COUNT(*) as count FROM student_progress WHERE student_id = $1 AND is_complete = true"
     )
     .bind(&student_id)
     .fetch_one(&state.db)

@@ -1,0 +1,104 @@
+{
+  "description": "Sample math word problems for testing. Problems vary by difficulty and state.",
+  "problems": [
+    {
+      "id": "problem_draft_001",
+      "text": "Emma has 5 red apples and 3 green apples. How many apples does she have in total?",
+      "difficulty": 1,
+      "state": "draft",
+      "skill_tags": ["addition", "single-digit"],
+      "expected_answer": 8
+    },
+    {
+      "id": "problem_scaffolded_001",
+      "text": "A bookshelf has 12 books on the top shelf and 8 books on the bottom shelf. How many books are on the bookshelf altogether?",
+      "difficulty": 2,
+      "state": "scaffolded",
+      "skill_tags": ["addition", "double-digit"],
+      "expected_answer": 20,
+      "scaffold_steps": [
+        {
+          "step_type": "find_objects",
+          "question": "What are we counting in this problem?",
+          "correct_answers": ["books"],
+          "wrong_answers": ["shelves", "pages", "bookshelf"],
+          "hint_text": "Look for the things that have numbers next to them.",
+          "hint_emoji": "📚"
+        },
+        {
+          "step_type": "find_numbers",
+          "question": "What numbers do we see in the problem?",
+          "correct_answers": ["12 and 8", "12, 8"],
+          "wrong_answers": ["12", "8", "20"],
+          "hint_text": "Find all the numbers mentioned in the problem.",
+          "hint_emoji": "🔢"
+        },
+        {
+          "step_type": "identify_operation",
+          "question": "What operation should we use? The word 'altogether' is a clue.",
+          "correct_answers": ["addition", "add", "+"],
+          "wrong_answers": ["subtraction", "multiplication", "division"],
+          "hint_text": "'Altogether' usually means we need to add.",
+          "hint_emoji": "➕"
+        },
+        {
+          "step_type": "build_equation",
+          "question": "Write the equation to solve this problem.",
+          "correct_answers": ["12 + 8", "8 + 12"],
+          "wrong_answers": ["12 - 8", "12 x 8", "12 / 8"],
+          "hint_text": "Put the two numbers together with the operation.",
+          "hint_emoji": "✏️"
+        },
+        {
+          "step_type": "solve",
+          "question": "What is 12 + 8?",
+          "correct_answers": ["20"],
+          "wrong_answers": ["18", "19", "21", "22"],
+          "hint_text": "Start at 12 and count up 8 more.",
+          "hint_emoji": "🎯"
+        }
+      ]
+    },
+    {
+      "id": "problem_reviewed_001",
+      "text": "Marcus had 15 stickers. He gave 7 stickers to his friend. How many stickers does Marcus have now?",
+      "difficulty": 2,
+      "state": "reviewed",
+      "skill_tags": ["subtraction", "double-digit"],
+      "expected_answer": 8
+    },
+    {
+      "id": "problem_published_001",
+      "text": "There are 24 students in the classroom. 9 students are boys. How many students are girls?",
+      "difficulty": 2,
+      "state": "published",
+      "skill_tags": ["subtraction", "double-digit"],
+      "expected_answer": 15
+    },
+    {
+      "id": "problem_published_002",
+      "text": "A farmer has 3 fields. Each field has 6 apple trees. How many apple trees does the farmer have in total?",
+      "difficulty": 3,
+      "state": "published",
+      "skill_tags": ["multiplication", "single-digit"],
+      "expected_answer": 18
+    },
+    {
+      "id": "problem_complex_001",
+      "text": "Sarah baked 48 cookies. She wants to share them equally among 6 friends. How many cookies will each friend get?",
+      "difficulty": 3,
+      "state": "draft",
+      "skill_tags": ["division", "double-digit"],
+      "expected_answer": 8
+    },
+    {
+      "id": "problem_ell_001",
+      "text": "Juan tiene 5 manzanas rojas y 3 manzanas verdes. ¿Cuántas manzanas tiene en total? (Juan has 5 red apples and 3 green apples. How many apples does he have in total?)",
+      "difficulty": 1,
+      "state": "draft",
+      "skill_tags": ["addition", "single-digit", "ell"],
+      "expected_answer": 8,
+      "notes": "Test ELL support - problem includes Spanish text"
+    }
+  ]
+}
