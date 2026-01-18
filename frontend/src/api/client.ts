@@ -15,12 +15,19 @@ import type {
   ScaffoldingResponse,
   PDFUploadResponse,
   StudentJoinResponse,
+  ForgotPasswordResponse,
+  BulkStudentEntry,
+  UpdateStudentRoster,
+  UpdateLessonSchedule,
+  CreateScaffoldStep,
+  UpdateScaffoldStep,
+  ScaffoldStep,
 } from '../types';
 
-// In production, use the Railway backend URL from env; in development, use local proxy
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD
-  ? 'https://backend-production-1a68.up.railway.app/api'
-  : '/api');
+// API URL is set via environment files:
+// - .env.development: /api (local proxy)
+// - .env.production: Railway backend URL
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 class ApiClient {
   private teacherToken: string | null = null;
@@ -124,15 +131,30 @@ class ApiClient {
     return result;
   }
 
+  // Password Reset (T1.3)
+  async forgotPassword(email: string): Promise<ApiResponse<ForgotPasswordResponse>> {
+    return this.request<ForgotPasswordResponse>('/auth/teacher/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, password: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/auth/teacher/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  }
+
   // Classes
   async getClasses(): Promise<ApiResponse<Class[]>> {
     return this.request<Class[]>('/classes');
   }
 
-  async createClass(name: string): Promise<ApiResponse<Class>> {
+  async createClass(name: string, purpose?: string, description?: string): Promise<ApiResponse<Class>> {
     return this.request<Class>('/classes', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, purpose, description }),
     });
   }
 
@@ -159,7 +181,45 @@ class ApiClient {
     });
   }
 
-  async updateClassSettings(classId: string, settings: Partial<Class['settings']>): Promise<ApiResponse<Class>> {
+  // T3.2 Roster Mapping
+  async updateStudentRoster(classId: string, studentId: string, roster: UpdateStudentRoster): Promise<ApiResponse<TeacherStudent>> {
+    return this.request<TeacherStudent>(`/classes/${classId}/students/${studentId}/roster`, {
+      method: 'PUT',
+      body: JSON.stringify(roster),
+    });
+  }
+
+  // T3.4 Bulk Student Import
+  async bulkCreateStudents(classId: string, students: BulkStudentEntry[]): Promise<ApiResponse<TeacherStudent[]>> {
+    return this.request<TeacherStudent[]>(`/classes/${classId}/students/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ students }),
+    });
+  }
+
+  // T3.4 Student Credential Export
+  async exportStudents(classId: string, format: 'json' | 'csv' = 'json'): Promise<ApiResponse<TeacherStudent[] | Blob>> {
+    if (format === 'csv') {
+      // For CSV, we need to handle the blob response differently
+      try {
+        const response = await fetch(`${API_BASE}/classes/${classId}/students/export?format=csv`, {
+          headers: {
+            'Authorization': `Bearer ${this.teacherToken}`,
+          },
+        });
+        if (!response.ok) {
+          return { error: 'Failed to export students' };
+        }
+        const blob = await response.blob();
+        return { data: blob as unknown as TeacherStudent[] };
+      } catch (error) {
+        return { error: error instanceof Error ? error.message : 'Network error' };
+      }
+    }
+    return this.request<TeacherStudent[]>(`/classes/${classId}/students/export?format=${format}`);
+  }
+
+  async updateClassSettings(classId: string, settings: Partial<Class['settings']> & { name?: string; purpose?: string; description?: string }): Promise<ApiResponse<Class>> {
     return this.request<Class>(`/classes/${classId}/settings`, {
       method: 'PUT',
       body: JSON.stringify(settings),
@@ -238,6 +298,14 @@ class ApiClient {
     });
   }
 
+  // T5.5 Lesson Release Scheduling
+  async updateLessonSchedule(lessonId: string, schedule: UpdateLessonSchedule): Promise<ApiResponse<Lesson>> {
+    return this.request<Lesson>(`/lessons/${lessonId}/schedule`, {
+      method: 'PUT',
+      body: JSON.stringify(schedule),
+    });
+  }
+
   // Problems
   async uploadPDF(classId: string, file: File): Promise<ApiResponse<PDFUploadResponse>> {
     const formData = new FormData();
@@ -308,6 +376,41 @@ class ApiClient {
   async publishProblem(problemId: string): Promise<ApiResponse<Problem>> {
     return this.request<Problem>(`/problems/${problemId}/publish`, {
       method: 'POST',
+    });
+  }
+
+  // T6.3 Problem State Workflow
+  async reviewProblem(problemId: string): Promise<ApiResponse<Problem>> {
+    return this.request<Problem>(`/problems/${problemId}/review`, {
+      method: 'POST',
+    });
+  }
+
+  // T7.3 Edit Individual Scaffold Steps
+  async addScaffoldStep(problemId: string, step: CreateScaffoldStep): Promise<ApiResponse<ScaffoldStep>> {
+    return this.request<ScaffoldStep>(`/problems/${problemId}/steps`, {
+      method: 'POST',
+      body: JSON.stringify(step),
+    });
+  }
+
+  async updateScaffoldStep(problemId: string, stepId: string, updates: UpdateScaffoldStep): Promise<ApiResponse<ScaffoldStep>> {
+    return this.request<ScaffoldStep>(`/problems/${problemId}/steps/${stepId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteScaffoldStep(problemId: string, stepId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/problems/${problemId}/steps/${stepId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async reorderScaffoldSteps(problemId: string, stepIds: string[]): Promise<ApiResponse<ScaffoldStep[]>> {
+    return this.request<ScaffoldStep[]>(`/problems/${problemId}/steps/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ step_ids: stepIds }),
     });
   }
 

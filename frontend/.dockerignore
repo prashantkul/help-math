@@ -1,0 +1,33 @@
+# Dependencies (will be installed fresh)
+node_modules
+
+# Build output (will be generated)
+dist
+
+# Git
+.git
+.gitignore
+
+# IDE/Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Test and coverage
+coverage
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Documentation
+*.md
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local env files (keep .env.development and .env.production)
+.env.local
+.env.*.local

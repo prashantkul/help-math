@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: helpmath-postgres
+    environment:
+      POSTGRES_USER: helpmath
+      POSTGRES_PASSWORD: helpmath_dev
+      POSTGRES_DB: helpmath
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpmath"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: helpmath-backend
+    environment:
+      DATABASE_URL: postgres://helpmath:helpmath_dev@helpmath-postgres:5432/helpmath
+      JWT_SECRET: dev-secret-change-in-production
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      RUST_LOG: debug
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: helpmath-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

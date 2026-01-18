@@ -1,29 +1,37 @@
 # Build stage
-FROM node:20-alpine as builder
+FROM node:20 AS builder
 
-# Accept build-time environment variable for Vite
-ARG VITE_API_URL
+WORKDIR /app
+
+# Ensure dev deps are installed (don’t use NODE_ENV=production here)
+ENV NODE_ENV=development
+
+# Install build tools for native Node modules
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
+# Copy package files *from frontend context*
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install \
+    && npx tsc -v \
+    && ls node_modules/.bin/tsc
+
+# Copy the rest of the frontend source
+COPY . .
+
+# Build arg for API URL
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
 
-WORKDIR /app
+# Build
+RUN npm run build --verbose
 
-COPY frontend/package*.json ./
-RUN npm install
+# Production stage
+FROM nginx:alpine
 
-COPY frontend/ .
-RUN npm run build
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Runtime stage
-FROM node:20-alpine
-
-WORKDIR /app
-
-RUN npm install -g serve
-
-COPY --from=builder /app/dist ./dist
-
-ENV PORT=3000
-
-EXPOSE 3000
-
-CMD sh -c "serve -s dist -l \$PORT"
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

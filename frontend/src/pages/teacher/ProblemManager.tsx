@@ -1,10 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Wand2, Check, X, Eye, Trash2, Send } from 'lucide-react';
+import { ArrowLeft, Upload, Wand2, Check, X, Eye, Trash2, Send, CheckCircle2, Circle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, Modal } from '../../components/common';
-import type { Problem, Class, ExtractedProblem } from '../../types';
+import type { Problem, Class, ExtractedProblem, ProblemState } from '../../types';
+
+// Helper function to get state badge styling
+const getStateBadge = (state: ProblemState) => {
+  switch (state) {
+    case 'draft':
+      return { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Draft' };
+    case 'scaffolded':
+      return { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Scaffolded' };
+    case 'reviewed':
+      return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Reviewed' };
+    case 'published':
+      return { bg: 'bg-green-100', text: 'text-green-700', label: 'Published' };
+    default:
+      return { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Unknown' };
+  }
+};
 
 export default function ProblemManager() {
   const { classId, lessonId } = useParams<{ classId?: string; lessonId?: string }>();
@@ -28,6 +44,8 @@ export default function ProblemManager() {
   const [extractedProblems, setExtractedProblems] = useState<ExtractedProblem[]>([]);
   const [showExtractedModal, setShowExtractedModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [showRegenerateModal, setShowRegenerateModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !teacher) {
@@ -131,17 +149,41 @@ export default function ProblemManager() {
 
   const handleGenerateScaffold = async (problemId: string) => {
     setIsGenerating(true);
-    const result = await apiClient.generateScaffold(problemId, classData?.settings.ell_level || 2);
+    try {
+      console.log('Generating scaffold for problem:', problemId);
+      const result = await apiClient.generateScaffold(problemId, classData?.settings.ell_level || 2);
+      console.log('Scaffold result:', result);
+
+      if (result.error) {
+        console.error('Scaffold generation error:', result.error);
+        alert(`Failed to generate scaffold: ${result.error}`);
+      } else if (result.data) {
+        // Refresh problem to get the scaffold
+        const problemResult = await apiClient.getProblem(problemId);
+        if (problemResult.data) {
+          setProblems(problems.map((p) => (p.id === problemId ? problemResult.data! : p)));
+          setSelectedProblem(problemResult.data);
+        }
+      }
+    } catch (error) {
+      console.error('Scaffold generation exception:', error);
+      alert(`Failed to generate scaffold: ${error}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleReview = async (problemId: string) => {
+    setIsReviewing(true);
+    const result = await apiClient.reviewProblem(problemId);
+    setIsReviewing(false);
 
     if (result.data) {
-      // Refresh problem to get the scaffold
-      const problemResult = await apiClient.getProblem(problemId);
-      if (problemResult.data) {
-        setProblems(problems.map((p) => (p.id === problemId ? problemResult.data! : p)));
-        setSelectedProblem(problemResult.data);
+      setProblems(problems.map((p) => (p.id === problemId ? result.data! : p)));
+      if (selectedProblem?.id === problemId) {
+        setSelectedProblem(result.data);
       }
     }
-    setIsGenerating(false);
   };
 
   const handlePublish = async (problemId: string) => {
@@ -248,15 +290,14 @@ export default function ProblemManager() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xl">{problem.scene_emoji || '📝'}</span>
-                        {problem.is_published ? (
-                          <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded">
-                            Published
-                          </span>
-                        ) : (
-                          <span className="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded">
-                            Draft
-                          </span>
-                        )}
+                        {(() => {
+                          const badge = getStateBadge(problem.state || 'draft');
+                          return (
+                            <span className={`${badge.bg} ${badge.text} text-xs font-bold px-2 py-0.5 rounded`}>
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
                         {problem.steps && problem.steps.length > 0 && (
                           <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">
                             {problem.steps.length} steps
@@ -329,8 +370,43 @@ export default function ProblemManager() {
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-2 pt-4 border-t">
-                    {(!selectedProblem.steps || selectedProblem.steps.length === 0) && (
+                  {/* State Workflow Indicator */}
+                  <div className="pt-4 border-t">
+                    <label className="text-sm font-medium text-gray-500 mb-3 block">
+                      Workflow
+                    </label>
+                    <div className="flex items-center justify-between text-xs mb-4">
+                      <div className={`flex flex-col items-center ${(selectedProblem.state || 'draft') === 'draft' ? 'text-blue-600' : 'text-green-600'}`}>
+                        <Circle className={`w-5 h-5 ${(selectedProblem.state || 'draft') !== 'draft' ? 'fill-green-600' : ''}`} />
+                        <span className="mt-1">Draft</span>
+                      </div>
+                      <div className="flex-1 h-0.5 bg-gray-200 mx-1">
+                        <div className={`h-full ${['scaffolded', 'reviewed', 'published'].includes(selectedProblem.state || 'draft') ? 'bg-green-500' : ''}`} />
+                      </div>
+                      <div className={`flex flex-col items-center ${selectedProblem.state === 'scaffolded' ? 'text-blue-600' : ['reviewed', 'published'].includes(selectedProblem.state || '') ? 'text-green-600' : 'text-gray-400'}`}>
+                        <Circle className={`w-5 h-5 ${['reviewed', 'published'].includes(selectedProblem.state || '') ? 'fill-green-600' : ''}`} />
+                        <span className="mt-1">Scaffold</span>
+                      </div>
+                      <div className="flex-1 h-0.5 bg-gray-200 mx-1">
+                        <div className={`h-full ${['reviewed', 'published'].includes(selectedProblem.state || '') ? 'bg-green-500' : ''}`} />
+                      </div>
+                      <div className={`flex flex-col items-center ${selectedProblem.state === 'reviewed' ? 'text-blue-600' : selectedProblem.state === 'published' ? 'text-green-600' : 'text-gray-400'}`}>
+                        <Circle className={`w-5 h-5 ${selectedProblem.state === 'published' ? 'fill-green-600' : ''}`} />
+                        <span className="mt-1">Review</span>
+                      </div>
+                      <div className="flex-1 h-0.5 bg-gray-200 mx-1">
+                        <div className={`h-full ${selectedProblem.state === 'published' ? 'bg-green-500' : ''}`} />
+                      </div>
+                      <div className={`flex flex-col items-center ${selectedProblem.state === 'published' ? 'text-green-600' : 'text-gray-400'}`}>
+                        <CheckCircle2 className={`w-5 h-5 ${selectedProblem.state === 'published' ? 'fill-green-600' : ''}`} />
+                        <span className="mt-1">Publish</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-2">
+                    {/* Generate scaffold - only for draft state with no steps */}
+                    {(selectedProblem.state === 'draft' || !selectedProblem.state) && (!selectedProblem.steps || selectedProblem.steps.length === 0) && (
                       <Button
                         variant="primary"
                         className="w-full"
@@ -342,6 +418,20 @@ export default function ProblemManager() {
                       </Button>
                     )}
 
+                    {/* Regenerate scaffold - when steps already exist */}
+                    {selectedProblem.steps && selectedProblem.steps.length > 0 && selectedProblem.state !== 'published' && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowRegenerateModal(true)}
+                        isLoading={isGenerating}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Regenerate Scaffold
+                      </Button>
+                    )}
+
+                    {/* Preview - available after scaffolding */}
                     {selectedProblem.steps && selectedProblem.steps.length > 0 && (
                       <Link to={`/teacher/problems/${selectedProblem.id}/preview`}>
                         <Button
@@ -354,7 +444,21 @@ export default function ProblemManager() {
                       </Link>
                     )}
 
-                    {selectedProblem.steps && selectedProblem.steps.length > 0 && !selectedProblem.is_published && (
+                    {/* Mark as Reviewed - only for scaffolded state */}
+                    {selectedProblem.state === 'scaffolded' && (
+                      <Button
+                        variant="primary"
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        onClick={() => handleReview(selectedProblem.id)}
+                        isLoading={isReviewing}
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Mark as Reviewed
+                      </Button>
+                    )}
+
+                    {/* Publish - only for reviewed state */}
+                    {selectedProblem.state === 'reviewed' && (
                       <Button
                         variant="success"
                         className="w-full"
@@ -363,6 +467,14 @@ export default function ProblemManager() {
                         <Send className="w-4 h-4 mr-2" />
                         Publish
                       </Button>
+                    )}
+
+                    {/* Show warning if trying to publish without review */}
+                    {selectedProblem.state === 'scaffolded' && (
+                      <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg flex items-start gap-1">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        Review the scaffold before publishing to students
+                      </p>
                     )}
 
                     <Button
@@ -467,6 +579,48 @@ export default function ProblemManager() {
           >
             Done
           </Button>
+        </div>
+      </Modal>
+
+      {/* Regenerate Scaffold Confirmation Modal */}
+      <Modal
+        isOpen={showRegenerateModal}
+        onClose={() => setShowRegenerateModal(false)}
+        title="Regenerate Scaffold"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-gray-800 font-medium">Are you sure?</p>
+              <p className="text-sm text-gray-600 mt-1">
+                This will replace the existing {selectedProblem?.steps?.length || 0} scaffold steps with new AI-generated steps.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowRegenerateModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={() => {
+                setShowRegenerateModal(false);
+                if (selectedProblem) {
+                  handleGenerateScaffold(selectedProblem.id);
+                }
+              }}
+              isLoading={isGenerating}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Regenerate
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

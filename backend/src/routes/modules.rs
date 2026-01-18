@@ -9,8 +9,8 @@ use uuid::Uuid;
 use crate::{
     app_middleware::TeacherAuth,
     models::{
-        CreateLesson, CreateModule, Lesson, LessonResponse, Module, ModuleResponse, Teacher,
-        UpdateLesson, UpdateModule,
+        CreateLesson, CreateModule, Lesson, LessonResponse, Module, ModuleResponse,
+        UpdateLesson, UpdateLessonSchedule, UpdateModule,
     },
     AppState,
 };
@@ -23,11 +23,11 @@ pub async fn list_modules(
     Path(class_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access to this class
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -43,7 +43,7 @@ pub async fn list_modules(
     }
 
     let modules = sqlx::query_as::<_, Module>(
-        "SELECT * FROM modules WHERE class_id = ? ORDER BY sort_order, created_at",
+        "SELECT * FROM modules WHERE class_id = $1 ORDER BY sort_order, created_at",
     )
     .bind(&class_id)
     .fetch_all(&state.db)
@@ -54,7 +54,7 @@ pub async fn list_modules(
     let mut responses = Vec::new();
     for module in modules {
         let lessons = sqlx::query_as::<_, Lesson>(
-            "SELECT * FROM lessons WHERE module_id = ? ORDER BY sort_order, created_at",
+            "SELECT * FROM lessons WHERE module_id = $1 ORDER BY sort_order, created_at",
         )
         .bind(&module.id)
         .fetch_all(&state.db)
@@ -74,11 +74,11 @@ pub async fn create_module(
     Json(payload): Json<CreateModule>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access to this class
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -95,7 +95,7 @@ pub async fn create_module(
 
     // Get the next sort order
     let max_order = sqlx::query_scalar::<_, Option<i32>>(
-        "SELECT MAX(sort_order) FROM modules WHERE class_id = ?",
+        "SELECT MAX(sort_order) FROM modules WHERE class_id = $1",
     )
     .bind(&class_id)
     .fetch_one(&state.db)
@@ -108,7 +108,7 @@ pub async fn create_module(
     sqlx::query(
         r#"
         INSERT INTO modules (id, class_id, name, description, sort_order)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
         "#,
     )
     .bind(&id)
@@ -120,7 +120,7 @@ pub async fn create_module(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&id)
         .fetch_one(&state.db)
         .await
@@ -139,18 +139,18 @@ pub async fn update_module(
     Json(payload): Json<UpdateModule>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access
-    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&module_id)
         .fetch_optional(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "Module not found".to_string()))?;
 
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -169,16 +169,13 @@ pub async fn update_module(
     let name = payload.name.unwrap_or(module.name);
     let description = payload.description.or(module.description);
     let sort_order = payload.sort_order.unwrap_or(module.sort_order);
-    let is_published = payload
-        .is_published
-        .map(|p| if p { 1 } else { 0 })
-        .unwrap_or(module.is_published);
+    let is_published = payload.is_published.unwrap_or(module.is_published);
 
     sqlx::query(
         r#"
         UPDATE modules
-        SET name = ?, description = ?, sort_order = ?, is_published = ?
-        WHERE id = ?
+        SET name = $1, description = $2, sort_order = $3, is_published = $4
+        WHERE id = $5
         "#,
     )
     .bind(&name)
@@ -190,14 +187,14 @@ pub async fn update_module(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let updated = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let updated = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&module_id)
         .fetch_one(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let lessons = sqlx::query_as::<_, Lesson>(
-        "SELECT * FROM lessons WHERE module_id = ? ORDER BY sort_order, created_at",
+        "SELECT * FROM lessons WHERE module_id = $1 ORDER BY sort_order, created_at",
     )
     .bind(&module_id)
     .fetch_all(&state.db)
@@ -213,18 +210,18 @@ pub async fn delete_module(
     Path(module_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access
-    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&module_id)
         .fetch_optional(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "Module not found".to_string()))?;
 
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -239,7 +236,7 @@ pub async fn delete_module(
         return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
     }
 
-    sqlx::query("DELETE FROM modules WHERE id = ?")
+    sqlx::query("DELETE FROM modules WHERE id = $1")
         .bind(&module_id)
         .execute(&state.db)
         .await
@@ -256,18 +253,18 @@ pub async fn list_lessons(
     Path(module_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access via module -> class
-    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&module_id)
         .fetch_optional(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "Module not found".to_string()))?;
 
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -283,7 +280,7 @@ pub async fn list_lessons(
     }
 
     let lessons = sqlx::query_as::<_, Lesson>(
-        "SELECT * FROM lessons WHERE module_id = ? ORDER BY sort_order, created_at",
+        "SELECT * FROM lessons WHERE module_id = $1 ORDER BY sort_order, created_at",
     )
     .bind(&module_id)
     .fetch_all(&state.db)
@@ -293,13 +290,13 @@ pub async fn list_lessons(
     // Get problem counts for each lesson
     let mut responses = Vec::new();
     for lesson in lessons {
-        let count = sqlx::query_scalar::<_, i32>(
-            "SELECT COUNT(*) FROM problems WHERE lesson_id = ?",
+        let count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM problems WHERE lesson_id = $1",
         )
         .bind(&lesson.id)
         .fetch_one(&state.db)
         .await
-        .unwrap_or(0);
+        .unwrap_or(0) as i32;
 
         responses.push(LessonResponse::from_lesson_with_count(lesson, count));
     }
@@ -314,18 +311,18 @@ pub async fn create_lesson(
     Json(payload): Json<CreateLesson>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access via module -> class
-    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&module_id)
         .fetch_optional(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "Module not found".to_string()))?;
 
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -342,7 +339,7 @@ pub async fn create_lesson(
 
     // Get the next sort order
     let max_order = sqlx::query_scalar::<_, Option<i32>>(
-        "SELECT MAX(sort_order) FROM lessons WHERE module_id = ?",
+        "SELECT MAX(sort_order) FROM lessons WHERE module_id = $1",
     )
     .bind(&module_id)
     .fetch_one(&state.db)
@@ -355,7 +352,7 @@ pub async fn create_lesson(
     sqlx::query(
         r#"
         INSERT INTO lessons (id, module_id, name, description, sort_order)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
         "#,
     )
     .bind(&id)
@@ -367,7 +364,7 @@ pub async fn create_lesson(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = ?")
+    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = $1")
         .bind(&id)
         .fetch_one(&state.db)
         .await
@@ -386,24 +383,24 @@ pub async fn update_lesson(
     Json(payload): Json<UpdateLesson>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access via lesson -> module -> class
-    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = ?")
+    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = $1")
         .bind(&lesson_id)
         .fetch_optional(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "Lesson not found".to_string()))?;
 
-    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&lesson.module_id)
         .fetch_one(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -421,16 +418,13 @@ pub async fn update_lesson(
     let name = payload.name.unwrap_or(lesson.name);
     let description = payload.description.or(lesson.description);
     let sort_order = payload.sort_order.unwrap_or(lesson.sort_order);
-    let is_published = payload
-        .is_published
-        .map(|p| if p { 1 } else { 0 })
-        .unwrap_or(lesson.is_published);
+    let is_published = payload.is_published.unwrap_or(lesson.is_published);
 
     sqlx::query(
         r#"
         UPDATE lessons
-        SET name = ?, description = ?, sort_order = ?, is_published = ?
-        WHERE id = ?
+        SET name = $1, description = $2, sort_order = $3, is_published = $4
+        WHERE id = $5
         "#,
     )
     .bind(&name)
@@ -442,19 +436,19 @@ pub async fn update_lesson(
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let updated = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = ?")
+    let updated = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = $1")
         .bind(&lesson_id)
         .fetch_one(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let count = sqlx::query_scalar::<_, i32>(
-        "SELECT COUNT(*) FROM problems WHERE lesson_id = ?",
+    let count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM problems WHERE lesson_id = $1",
     )
     .bind(&lesson_id)
     .fetch_one(&state.db)
     .await
-    .unwrap_or(0);
+    .unwrap_or(0) as i32;
 
     Ok(Json(LessonResponse::from_lesson_with_count(updated, count)))
 }
@@ -465,24 +459,24 @@ pub async fn delete_lesson(
     Path(lesson_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     // Verify teacher has access via lesson -> module -> class
-    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = ?")
+    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = $1")
         .bind(&lesson_id)
         .fetch_optional(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "Lesson not found".to_string()))?;
 
-    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&lesson.module_id)
         .fetch_one(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -497,7 +491,7 @@ pub async fn delete_lesson(
         return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
     }
 
-    sqlx::query("DELETE FROM lessons WHERE id = ?")
+    sqlx::query("DELETE FROM lessons WHERE id = $1")
         .bind(&lesson_id)
         .execute(&state.db)
         .await
@@ -512,24 +506,24 @@ pub async fn get_lesson(
     Extension(auth): Extension<TeacherAuth>,
     Path(lesson_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = ?")
+    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = $1")
         .bind(&lesson_id)
         .fetch_optional(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "Lesson not found".to_string()))?;
 
-    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = ?")
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
         .bind(&lesson.module_id)
         .fetch_one(&state.db)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let has_access = sqlx::query_scalar::<_, i32>(
+    let has_access = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*) FROM classes
-        WHERE id = ? AND (teacher_id = ? OR id IN (
-            SELECT class_id FROM class_teachers WHERE teacher_id = ?
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
         ))
         "#,
     )
@@ -544,13 +538,116 @@ pub async fn get_lesson(
         return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
     }
 
-    let count = sqlx::query_scalar::<_, i32>(
-        "SELECT COUNT(*) FROM problems WHERE lesson_id = ?",
+    let count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM problems WHERE lesson_id = $1",
     )
     .bind(&lesson_id)
     .fetch_one(&state.db)
     .await
-    .unwrap_or(0);
+    .unwrap_or(0) as i32;
 
     Ok(Json(LessonResponse::from_lesson_with_class(lesson, module.class_id, count)))
+}
+
+// Update lesson release schedule
+pub async fn update_lesson_schedule(
+    State(state): State<AppState>,
+    Extension(auth): Extension<TeacherAuth>,
+    Path(lesson_id): Path<String>,
+    Json(payload): Json<UpdateLessonSchedule>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    // Validate release_type
+    let valid_types = ["immediate", "scheduled", "manual", "sequential"];
+    if !valid_types.contains(&payload.release_type.as_str()) {
+        return Err((StatusCode::BAD_REQUEST, "Invalid release_type. Must be one of: immediate, scheduled, manual, sequential".to_string()));
+    }
+
+    // Verify teacher has access via lesson -> module -> class
+    let lesson = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = $1")
+        .bind(&lesson_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Lesson not found".to_string()))?;
+
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
+        .bind(&lesson.module_id)
+        .fetch_one(&state.db)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let has_access = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*) FROM classes
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
+        ))
+        "#,
+    )
+    .bind(&module.class_id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if has_access == 0 {
+        return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
+    }
+
+    // Validate sequential dependency if provided
+    if payload.release_type == "sequential" {
+        if let Some(ref after_id) = payload.release_after_lesson_id {
+            let depends_exists = sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM lessons WHERE id = $1 AND module_id = $2",
+            )
+            .bind(after_id)
+            .bind(&lesson.module_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            if depends_exists == 0 {
+                return Err((StatusCode::BAD_REQUEST, "release_after_lesson_id must reference a lesson in the same module".to_string()));
+            }
+
+            // Prevent circular dependencies
+            if after_id == &lesson_id {
+                return Err((StatusCode::BAD_REQUEST, "A lesson cannot depend on itself".to_string()));
+            }
+        } else {
+            return Err((StatusCode::BAD_REQUEST, "release_after_lesson_id is required when release_type is 'sequential'".to_string()));
+        }
+    }
+
+    sqlx::query(
+        r#"
+        UPDATE lessons
+        SET release_type = $1, release_at = $2, release_after_lesson_id = $3
+        WHERE id = $4
+        "#,
+    )
+    .bind(&payload.release_type)
+    .bind(&payload.release_at)
+    .bind(&payload.release_after_lesson_id)
+    .bind(&lesson_id)
+    .execute(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let updated = sqlx::query_as::<_, Lesson>("SELECT * FROM lessons WHERE id = $1")
+        .bind(&lesson_id)
+        .fetch_one(&state.db)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM problems WHERE lesson_id = $1",
+    )
+    .bind(&lesson_id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(0) as i32;
+
+    Ok(Json(LessonResponse::from_lesson_with_count(updated, count)))
 }

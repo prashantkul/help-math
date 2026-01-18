@@ -47,6 +47,12 @@ impl AIService {
         problem_text: &str,
         ell_level: i32,
     ) -> Result<ScaffoldingAIResponse> {
+        // Check if API key is configured
+        if self.api_key.is_empty() {
+            return Err(anyhow!("ANTHROPIC_API_KEY is not configured"));
+        }
+        tracing::info!("Calling Claude API with key: {}...", &self.api_key[..20.min(self.api_key.len())]);
+
         let system_prompt = self.get_system_prompt(ell_level);
         let user_prompt = format!(
             "Please scaffold the following math word problem for a 3rd grade ELL student:\n\n{}",
@@ -74,9 +80,12 @@ impl AIService {
             .await
             .map_err(|e| anyhow!("Failed to call Claude API: {}", e))?;
 
-        if !response.status().is_success() {
+        let status = response.status();
+        tracing::info!("Claude API response status: {}", status);
+
+        if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            return Err(anyhow!("Claude API error: {}", error_text));
+            return Err(anyhow!("Claude API error ({}): {}", status, error_text));
         }
 
         let claude_response: ClaudeResponse = response
