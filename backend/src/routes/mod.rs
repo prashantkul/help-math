@@ -5,6 +5,8 @@ pub mod assignments;
 pub mod student;
 pub mod analytics;
 pub mod modules;
+pub mod curriculum;
+pub mod tts;
 
 pub use auth::*;
 pub use classes::*;
@@ -13,3 +15,5 @@ pub use assignments::*;
 pub use student::*;
 pub use analytics::*;
 pub use modules::*;
+pub use curriculum::*;
+pub use tts::*;

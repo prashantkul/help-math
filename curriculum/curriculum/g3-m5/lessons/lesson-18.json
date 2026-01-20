@@ -1,0 +1,34 @@
+{
+  "lesson_number": 18,
+  "topic": "D",
+  "title": "Comparing Fractions on the Number Line",
+  "objective": "Compare fractions and whole numbers on the number line by reasoning about distance from 0.",
+  "standards": ["3.NF.3d", "3.NF.2b"],
+  "problems": [
+    {
+      "id": "L18-P1-5",
+      "number": "1-5",
+      "text": "Place the two fractions on the number line. Circle the fraction with the distance closest to 0. Then, compare using >, <, or =.",
+      "type": "compare",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {"problem": 1, "fraction_a": "1/4", "fraction_b": "3/4", "answer": "<"},
+        {"problem": 2, "fraction_a": "2/6", "fraction_b": "3/6"},
+        {"problem": 3, "fraction_a": "1/2", "fraction_b": "1/4"},
+        {"problem": 4, "fraction_a": "2/3", "fraction_b": "2/6"},
+        {"problem": 5, "fraction_a": "11/8", "fraction_b": "7/4"}
+      ],
+      "skills": ["number_line", "comparing_fractions", "distance_from_zero"]
+    },
+    {
+      "id": "L18-P6",
+      "number": "6",
+      "text": "JoAnn and Lupe live straight down the street from their school. JoAnn walks 5/6 miles and Lupe walks 7/8 miles home from school every day. Draw a number line to model how far each girl walks. Who walks the shorter distance?",
+      "type": "compare",
+      "visual_model": "number_line",
+      "fractions_to_compare": ["5/6", "7/8"],
+      "answer": "JoAnn walks shorter (5/6 < 7/8)",
+      "skills": ["number_line", "comparing_fractions", "word_problem"]
+    }
+  ]
+}

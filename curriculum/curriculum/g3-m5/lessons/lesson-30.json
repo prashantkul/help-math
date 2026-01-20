@@ -1,0 +1,20 @@
+{
+  "lesson_number": 30,
+  "topic": "F",
+  "title": "Partitioning Using Number Line Method",
+  "objective": "Partition various wholes precisely into equal parts using a number line method.",
+  "standards": ["3.G.2", "3.NF.2"],
+  "note": "This is a hands-on exploratory lesson using notebook paper and straight edges.",
+  "problems": [
+    {
+      "id": "L30-P1",
+      "number": "1",
+      "text": "Describe step by step the experience you had of partitioning a length into equal units by simply using a piece of notebook paper and a straight edge. Illustrate the process.",
+      "type": "reasoning",
+      "visual_model": "strip",
+      "skills": ["partitioning", "explanation", "process_description"]
+    }
+  ],
+  "activity_description": "Students use lined notebook paper placed at an angle to partition strips into equal parts. The lines on the paper help create equal divisions without measuring.",
+  "materials": ["lined notebook paper", "straight edge", "paper strips"]
+}

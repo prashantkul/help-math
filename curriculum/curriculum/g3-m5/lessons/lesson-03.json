@@ -1,0 +1,67 @@
+{
+  "lesson_number": 3,
+  "topic": "A",
+  "title": "Drawing Pictorial Area Models",
+  "objective": "Specify and partition a whole into equal parts, identifying and counting unit fractions by drawing pictorial area models.",
+  "standards": ["3.G.2", "3.NF.1"],
+  "problems": [
+    {
+      "id": "L3-P1",
+      "number": "1",
+      "text": "Each shape is a whole divided into equal parts. Name the fractional unit, and then count and tell how many of those units are shaded.",
+      "type": "identify_fraction",
+      "visual_model": "mixed",
+      "example": "Fourths - 2 fourths are shaded",
+      "skills": ["naming_fractions", "counting_shaded"]
+    },
+    {
+      "id": "L3-P2",
+      "number": "2",
+      "text": "Circle the shapes that are divided into equal parts. Write a sentence telling what equal parts means.",
+      "type": "identify_equal_parts",
+      "visual_model": "mixed",
+      "skills": ["equal_parts_recognition", "explanation"]
+    },
+    {
+      "id": "L3-P3",
+      "number": "3",
+      "text": "Each shape is 1 whole. Estimate to divide each into 4 equal parts. Name the fractional unit below.",
+      "type": "partition",
+      "visual_model": "mixed",
+      "target_parts": 4,
+      "answer": {"fractional_unit": "fourths"},
+      "skills": ["partitioning", "naming_fractions"]
+    },
+    {
+      "id": "L3-P4",
+      "number": "4",
+      "text": "Each shape is 1 whole. Divide and shade to show the given fraction.",
+      "type": "shade_fraction",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {"part": "a", "target_fraction": "1/2", "instruction": "1 half"},
+        {"part": "b", "target_fraction": "1/6", "instruction": "1 sixth"},
+        {"part": "c", "target_fraction": "1/3", "instruction": "1 third"}
+      ],
+      "skills": ["partitioning", "shading", "unit_fractions"]
+    },
+    {
+      "id": "L3-P5",
+      "number": "5",
+      "text": "Each shape is 1 whole. Estimate to divide each into equal parts (do not draw fourths). Divide each whole using a different fractional unit. Write the name of the fractional unit on the line below the shape.",
+      "type": "partition",
+      "visual_model": "mixed",
+      "skills": ["partitioning", "naming_fractions", "creativity"]
+    },
+    {
+      "id": "L3-P6",
+      "number": "6",
+      "text": "Charlotte wants to equally share a candy bar with 4 friends. Draw Charlotte's candy bar. Show how she can divide her candy bar so everyone gets an equal share. What fraction of the candy bar does each person receive?",
+      "type": "fraction_word_problem",
+      "visual_model": "rectangle",
+      "context": {"num_people": 5, "item": "candy bar"},
+      "answer": {"fraction": "1/5", "unit_form": "1 fifth"},
+      "skills": ["fair_sharing", "partitioning", "unit_fractions"]
+    }
+  ]
+}

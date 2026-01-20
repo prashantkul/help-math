@@ -1,0 +1,49 @@
+{
+  "lesson_number": 9,
+  "topic": "B",
+  "title": "Fractions Greater Than One Whole",
+  "objective": "Build and write fractions greater than one whole using unit fractions.",
+  "standards": ["3.NF.1"],
+  "problems": [
+    {
+      "id": "L9-P1",
+      "number": "1",
+      "text": "Each figure represents 1 whole. Fill in the chart: Unit Fraction, Total Number of Units Shaded, Fraction Shaded.",
+      "type": "identify_fraction",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {"part": "a"},
+        {"part": "b"},
+        {"part": "c"},
+        {"part": "d"},
+        {"part": "e"},
+        {"part": "f"}
+      ],
+      "skills": ["fractions_greater_than_one", "identify_fraction"]
+    },
+    {
+      "id": "L9-P2",
+      "number": "2",
+      "text": "Estimate to draw and shade units on the fraction strips. Solve.",
+      "type": "shade_fraction",
+      "visual_model": "strip",
+      "sub_problems": [
+        {"part": "a", "instruction": "8 sixths = __", "answer": "8/6"},
+        {"part": "b", "instruction": "7 fourths = __", "answer": "7/4"},
+        {"part": "c", "instruction": "__ = 6/5"},
+        {"part": "d", "instruction": "__ = 5/2"}
+      ],
+      "skills": ["fractions_greater_than_one", "shading"]
+    },
+    {
+      "id": "L9-P3",
+      "number": "3",
+      "text": "Mrs. Jawlik baked 2 pans of brownies. Draw the pans and estimate to partition each pan into 8 equal pieces.",
+      "type": "partition",
+      "visual_model": "rectangle",
+      "target_parts": 8,
+      "context": {"items": "brownie pans", "count": 2},
+      "skills": ["partitioning", "fractions_greater_than_one"]
+    }
+  ]
+}

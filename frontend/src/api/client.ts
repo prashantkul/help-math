@@ -151,10 +151,10 @@ class ApiClient {
     return this.request<Class[]>('/classes');
   }
 
-  async createClass(name: string, purpose?: string, description?: string): Promise<ApiResponse<Class>> {
+  async createClass(name: string, purpose?: string, description?: string, grade?: number): Promise<ApiResponse<Class>> {
     return this.request<Class>('/classes', {
       method: 'POST',
-      body: JSON.stringify({ name, purpose, description }),
+      body: JSON.stringify({ name, purpose, description, grade }),
     });
   }
 
@@ -226,6 +226,12 @@ class ApiClient {
     });
   }
 
+  async deleteClass(classId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/classes/${classId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Co-teachers
   async getCoTeachers(classId: string): Promise<ApiResponse<CoTeacher[]>> {
     return this.request<CoTeacher[]>(`/classes/${classId}/coteachers`);
@@ -249,14 +255,14 @@ class ApiClient {
     return this.request<Module[]>(`/classes/${classId}/modules`);
   }
 
-  async createModule(classId: string, name: string, description?: string): Promise<ApiResponse<Module>> {
+  async createModule(classId: string, name: string, description?: string, scaffoldPrompt?: string): Promise<ApiResponse<Module>> {
     return this.request<Module>(`/classes/${classId}/modules`, {
       method: 'POST',
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({ name, description, scaffold_prompt: scaffoldPrompt }),
     });
   }
 
-  async updateModule(moduleId: string, updates: { name?: string; description?: string; sort_order?: number; is_published?: boolean }): Promise<ApiResponse<Module>> {
+  async updateModule(moduleId: string, updates: { name?: string; description?: string; sort_order?: number; is_published?: boolean; scaffold_prompt?: string }): Promise<ApiResponse<Module>> {
     return this.request<Module>(`/modules/${moduleId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),

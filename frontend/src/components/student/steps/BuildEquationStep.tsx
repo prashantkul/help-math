@@ -1,6 +1,52 @@
 import { useState } from 'react';
-import { Button, Card, ReadAloudButton } from '../../common';
+import { Button, Card, ReadAloudButton, AnnotatableText } from '../../common';
 import type { ScaffoldStep } from '../../../types';
+
+// Vertical equation preview for addition/subtraction
+function VerticalEquationPreview({
+  left,
+  operator,
+  right,
+}: {
+  left: number | null;
+  operator: string | null;
+  right: number | null;
+}) {
+  // Only show for + and -
+  if (operator !== '+' && operator !== '-') {
+    return null;
+  }
+
+  const maxDigits = Math.max(
+    left?.toString().length || 1,
+    right?.toString().length || 1
+  );
+
+  return (
+    <div className="inline-flex flex-col items-end font-mono text-2xl text-gray-700 mb-4">
+      {/* Top number */}
+      <div className="pr-2 min-w-[2em] text-right">
+        {left !== null ? left : <span className="text-gray-300">?</span>}
+      </div>
+
+      {/* Operator and bottom number */}
+      <div className="flex items-center">
+        <span className="text-indigo-600 mr-2">
+          {operator || <span className="text-gray-300">○</span>}
+        </span>
+        <span className="min-w-[2em] text-right">
+          {right !== null ? right : <span className="text-gray-300">?</span>}
+        </span>
+      </div>
+
+      {/* Line */}
+      <div
+        className="border-b-4 border-indigo-600 w-full mt-1"
+        style={{ minWidth: `${(maxDigits + 2) * 1.2}em` }}
+      />
+    </div>
+  );
+}
 
 interface StepProps {
   step: ScaffoldStep;
@@ -52,13 +98,24 @@ export default function BuildEquationStep({ step, onSubmit, result, onTryAgain }
 
   return (
     <Card variant="warm" padding="lg" className="text-center">
-      {/* Prompt */}
-      <div className="flex items-center justify-center gap-3 mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          {step.prompt_text}
-        </h2>
-        <ReadAloudButton text={step.prompt_text} size="md" />
+      {/* Prompt with annotation support */}
+      <div className="mb-6">
+        <div className="flex justify-end mb-2">
+          <ReadAloudButton text={step.prompt_text} size="md" />
+        </div>
+        <AnnotatableText
+          text={step.prompt_text}
+          showInstructions={false}
+          className="text-2xl font-bold text-gray-800"
+        />
       </div>
+
+      {/* Vertical preview for addition/subtraction */}
+      {(operator === '+' || operator === '-') && (
+        <div className="flex justify-center">
+          <VerticalEquationPreview left={left} operator={operator} right={right} />
+        </div>
+      )}
 
       {/* Equation Builder */}
       <div className="bg-white rounded-2xl p-6 mb-6">

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
-import { Button, Card, Loading, ProgressBar, ReadAloudButton } from '../../components/common';
+import { Button, Card, Loading, ProgressBar, ReadAloudButton, AnnotatableText } from '../../components/common';
 import type { Problem, ScaffoldStep } from '../../types';
 
 // Import step components
@@ -151,25 +151,25 @@ export default function ProblemPreview() {
       attempts,
     };
 
-    switch (step.step_type) {
-      case 'find_objects':
-        return <FindObjectsStep {...commonProps} />;
-      case 'find_numbers':
-        return <FindNumbersStep {...commonProps} />;
-      case 'identify_operation':
-        return <IdentifyOperationStep {...commonProps} />;
-      case 'build_equation':
-        return <BuildEquationStep {...commonProps} />;
-      case 'solve':
+    // Route by answer_type for flexibility - step_type is just a label
+    // This allows the AI to create any step_type based on curriculum needs
+    switch (step.answer_type) {
+      case 'number_input':
         return <SolveStep {...commonProps} />;
-      case 'comprehension_check':
+      case 'multi_select':
+        return <FindObjectsStep {...commonProps} />;
+      case 'multiple_choice':
+        // Use operation step if it looks like an operation choice, otherwise generic
+        if (step.step_type === 'identify_operation' ||
+            (step.options && step.options.some(o => ['+', '-', '×', '÷', 'add', 'subtract', 'multiply', 'divide'].includes(String(o.value).toLowerCase())))) {
+          return <IdentifyOperationStep {...commonProps} />;
+        }
         return <ComprehensionCheckStep {...commonProps} />;
+      case 'equation_builder':
+        return <BuildEquationStep {...commonProps} />;
       default:
-        return (
-          <Card padding="lg">
-            <p className="text-gray-600">Unknown step type: {step.step_type}</p>
-          </Card>
-        );
+        // Fallback to comprehension check for any other type
+        return <ComprehensionCheckStep {...commonProps} />;
     }
   };
 
@@ -202,14 +202,17 @@ export default function ProblemPreview() {
               <span className="text-7xl block mb-4">{problem.scene_emoji}</span>
             )}
 
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              {problem.simplified_text || problem.original_text}
-            </h2>
-
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-end mb-2">
               <ReadAloudButton
                 text={problem.simplified_text || problem.original_text}
                 size="lg"
+              />
+            </div>
+
+            <div className="text-left mb-6">
+              <AnnotatableText
+                text={problem.simplified_text || problem.original_text}
+                showInstructions={true}
               />
             </div>
 
@@ -283,9 +286,11 @@ export default function ProblemPreview() {
               <span className="text-4xl">{problem.scene_emoji}</span>
             )}
             <div className="flex-1">
-              <p className="text-lg text-gray-800">
-                {problem.simplified_text || problem.original_text}
-              </p>
+              <AnnotatableText
+                text={problem.simplified_text || problem.original_text}
+                showInstructions={false}
+                className="text-lg"
+              />
             </div>
             <ReadAloudButton
               text={problem.simplified_text || problem.original_text}

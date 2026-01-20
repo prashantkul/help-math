@@ -1,0 +1,46 @@
+{
+  "lesson_number": 20,
+  "topic": "E",
+  "title": "Equivalent Fractions - Same Size",
+  "objective": "Recognize and show that equivalent fractions have the same size, though not necessarily the same shape.",
+  "standards": ["3.NF.3a", "3.NF.3b"],
+  "problems": [
+    {
+      "id": "L20-P1",
+      "number": "1",
+      "text": "Label what fraction of each shape is shaded. Then, circle the fractions that are equal.",
+      "type": "equivalent",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {"part": "a"},
+        {"part": "b"},
+        {"part": "c"}
+      ],
+      "skills": ["identify_fraction", "equivalent_fractions"]
+    },
+    {
+      "id": "L20-P2",
+      "number": "2",
+      "text": "Label the shaded fraction. Draw 2 different representations of the same fractional amount.",
+      "type": "equivalent",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {"part": "a"},
+        {"part": "b"}
+      ],
+      "skills": ["equivalent_fractions", "drawing_models"]
+    },
+    {
+      "id": "L20-P3",
+      "number": "3",
+      "text": "Ann has 6 small square pieces of paper. 2 squares are grey. Ann cuts the 2 grey squares in half with a diagonal line from one corner to the other.",
+      "type": "reasoning",
+      "visual_model": "discrete",
+      "sub_problems": [
+        {"part": "a", "question": "What shapes does she have now?"},
+        {"part": "b", "question": "How many of each shape does she have?"}
+      ],
+      "skills": ["reasoning", "partitioning"]
+    }
+  ]
+}

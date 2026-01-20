@@ -26,6 +26,12 @@ services:
       DATABASE_URL: postgres://helpmath:helpmath_dev@helpmath-postgres:5432/helpmath
       JWT_SECRET: dev-secret-change-in-production
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CURRICULUM_BUCKET_NAME: ${CURRICULUM_BUCKET_NAME}
+      RAILWAY_BUCKET_ENDPOINT: ${RAILWAY_BUCKET_ENDPOINT}
+      BUCKET_ACCESS_KEY_ID: ${BUCKET_ACCESS_KEY_ID}
+      BUCKET_SECRET_ACCESS_KEY: ${BUCKET_SECRET_ACCESS_KEY}
+      ELEVEN_API_KEY: ${ELEVEN_API_KEY}
+      ELEVEN_VOICE_ID: ${ELEVEN_VOICE_ID}
       RUST_LOG: debug
       PORT: 8080
     ports:

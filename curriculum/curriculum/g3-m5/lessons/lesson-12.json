@@ -1,0 +1,57 @@
+{
+  "lesson_number": 12,
+  "topic": "C",
+  "title": "Specifying the Whole",
+  "objective": "Specify the corresponding whole when presented with one equal part.",
+  "standards": ["3.NF.1"],
+  "problems": [
+    {
+      "id": "L12-P1",
+      "number": "1",
+      "text": "Yellow strip: Draw a picture of the designated unit fraction copied to make at least two different wholes. Label the unit fractions. Label the whole as 1. Draw at least one number bond that matches a drawing.",
+      "type": "construct_whole",
+      "visual_model": "strip",
+      "skills": ["unit_fractions", "building_wholes", "number_bonds"]
+    },
+    {
+      "id": "L12-P2",
+      "number": "2",
+      "text": "Brown strip: Draw a picture of the designated unit fraction copied to make at least two different wholes. Label the unit fractions. Label the whole as 1.",
+      "type": "construct_whole",
+      "visual_model": "strip",
+      "skills": ["unit_fractions", "building_wholes"]
+    },
+    {
+      "id": "L12-P3",
+      "number": "3",
+      "text": "Orange square: Draw a picture of the designated unit fraction copied to make at least two different wholes.",
+      "type": "construct_whole",
+      "visual_model": "rectangle",
+      "skills": ["unit_fractions", "building_wholes"]
+    },
+    {
+      "id": "L12-P4",
+      "number": "4",
+      "text": "Yarn: Draw a picture of the designated unit fraction copied to make at least two different wholes.",
+      "type": "construct_whole",
+      "visual_model": "strip",
+      "skills": ["unit_fractions", "building_wholes"]
+    },
+    {
+      "id": "L12-P5",
+      "number": "5",
+      "text": "Water: Draw a picture of the designated unit fraction copied to make at least two different wholes.",
+      "type": "construct_whole",
+      "visual_model": "beaker",
+      "skills": ["unit_fractions", "building_wholes"]
+    },
+    {
+      "id": "L12-P6",
+      "number": "6",
+      "text": "Clay: Draw a picture of the designated unit fraction copied to make at least two different wholes.",
+      "type": "construct_whole",
+      "visual_model": "discrete",
+      "skills": ["unit_fractions", "building_wholes"]
+    }
+  ]
+}

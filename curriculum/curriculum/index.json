@@ -1,0 +1,13 @@
+{
+  "modules": [
+    {
+      "id": "g3-m5",
+      "name": "Grade 3 Module 5",
+      "title": "Fractions as Numbers on the Number Line",
+      "grade": 3,
+      "source": "Eureka Math",
+      "lesson_count": 30,
+      "path": "g3-m5/module.json"
+    }
+  ]
+}

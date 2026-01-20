@@ -1,0 +1,76 @@
+{
+  "lesson_number": 5,
+  "topic": "B",
+  "title": "Identifying Unit Fractions Numerically",
+  "objective": "Partition a whole into equal parts and define the equal parts to identify the unit fraction numerically.",
+  "standards": ["3.NF.1", "3.G.2"],
+  "problems": [
+    {
+      "id": "L5-P1",
+      "number": "1",
+      "text": "Fill in the chart. Each image is one whole.",
+      "type": "identify_fraction",
+      "visual_model": "mixed",
+      "instructions": "Complete: Total Number of Equal Parts, Total Number of Equal Parts Shaded, Unit Form, Fraction Form",
+      "sub_problems": [
+        {"part": "a", "visual": "shape_partitioned"},
+        {"part": "b", "visual": "shape_partitioned"},
+        {"part": "c", "visual": "shape_partitioned"},
+        {"part": "d", "visual": "shape_partitioned"},
+        {"part": "e", "visual": "shape_partitioned"},
+        {"part": "f", "visual": "shape_partitioned"}
+      ],
+      "answer_format": {
+        "total_parts": "number",
+        "shaded_parts": "number",
+        "unit_form": "text (e.g., '1 fourth')",
+        "fraction_form": "fraction (e.g., '1/4')"
+      },
+      "skills": ["identify_fraction", "unit_form", "fraction_form"]
+    },
+    {
+      "id": "L5-P2",
+      "number": "2",
+      "text": "Andre's mom baked his 2 favorite cakes for his birthday party. The cakes were the exact same size. Andre cut his first cake into 8 pieces for him and his 7 friends. The picture shows how he cut it. Did Andre cut the cake into eighths? Explain your answer.",
+      "type": "reasoning",
+      "visual_model": "circle",
+      "context": "Cake cut into unequal pieces",
+      "answer": {
+        "correct": "No",
+        "explanation": "The pieces are not equal. Eighths means 8 EQUAL parts."
+      },
+      "skills": ["equal_parts_verification", "reasoning", "explanation"]
+    },
+    {
+      "id": "L5-P3",
+      "number": "3",
+      "text": "Two of Andre's friends came late to his party. They decide they will all share the second cake. Show how Andre can slice the second cake so that he and his nine friends can each get an equal amount with none leftover. What fraction of the second cake will they each receive?",
+      "type": "partition",
+      "visual_model": "circle",
+      "context": {
+        "total_people": 10,
+        "item": "cake"
+      },
+      "answer": {
+        "fraction": "1/10",
+        "unit_form": "1 tenth",
+        "parts_needed": 10
+      },
+      "skills": ["partitioning", "fair_sharing", "unit_fractions"]
+    },
+    {
+      "id": "L5-P4",
+      "number": "4",
+      "text": "Andre thinks it's strange that 1/10 of the cake would be less than 1/8 of the cake since ten is bigger than eight. Draw 2 identical rectangles to represent the cakes. Show 1 tenth shaded on one and 1 eighth shaded on the other. Label the unit fractions and explain which slice is bigger.",
+      "type": "compare",
+      "visual_model": "rectangle",
+      "fractions_to_compare": ["1/10", "1/8"],
+      "answer": {
+        "larger": "1/8",
+        "explanation": "When you cut into MORE pieces, each piece is SMALLER. 1/8 is bigger because 8 pieces means bigger pieces than 10 pieces."
+      },
+      "key_concept": "More parts = smaller pieces",
+      "skills": ["comparing_unit_fractions", "reasoning", "visual_proof"]
+    }
+  ]
+}

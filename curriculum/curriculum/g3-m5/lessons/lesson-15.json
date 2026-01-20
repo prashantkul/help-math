@@ -1,0 +1,33 @@
+{
+  "lesson_number": 15,
+  "topic": "D",
+  "title": "Any Fraction on the Number Line",
+  "objective": "Place any fraction on a number line with endpoints 0 and 1.",
+  "standards": ["3.NF.2a", "3.NF.2b"],
+  "problems": [
+    {
+      "id": "L15-P1",
+      "number": "1",
+      "text": "Estimate to label the given fractions on the number line. Be sure to label the fractions at 0 and 1. Write the fractions above the number line. Draw a number bond to match your number line.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {"part": "a", "fraction": "2/3", "denominator": 3},
+        {"part": "b", "fraction": "3/4", "denominator": 4},
+        {"part": "c", "fraction": "3/5", "denominator": 5},
+        {"part": "d", "fraction": "5/6", "denominator": 6},
+        {"part": "e", "fraction": "3/10", "denominator": 10}
+      ],
+      "skills": ["number_line", "labeling_fractions", "number_bond"]
+    },
+    {
+      "id": "L15-P2",
+      "number": "2",
+      "text": "Draw a number line. Use a fraction strip to locate 0 and 1. Fold the strip to make 8 equal parts. Use the strip to measure and label your number line with eighths.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "denominator": 8,
+      "skills": ["number_line", "partitioning", "eighths"]
+    }
+  ]
+}

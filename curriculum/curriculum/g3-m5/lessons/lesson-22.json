@@ -1,0 +1,47 @@
+{
+  "lesson_number": 22,
+  "topic": "E",
+  "title": "Generating Equivalent Fractions",
+  "objective": "Generate simple equivalent fractions by using visual fraction models and the number line.",
+  "standards": ["3.NF.3a", "3.NF.3b"],
+  "problems": [
+    {
+      "id": "L22-P1",
+      "number": "1",
+      "text": "Write the shaded fraction of each figure on the blank. Then, draw a line to match the equivalent fractions.",
+      "type": "equivalent",
+      "visual_model": "mixed",
+      "skills": ["identify_fraction", "equivalent_fractions", "matching"]
+    },
+    {
+      "id": "L22-P2",
+      "number": "2",
+      "text": "Write the missing parts of the fractions.",
+      "type": "equivalent",
+      "visual_model": "mixed",
+      "equations": [
+        "1/3 = __/6",
+        "2/__ = 1/4",
+        "4/8 = __/8"
+      ],
+      "skills": ["equivalent_fractions"]
+    },
+    {
+      "id": "L22-P3",
+      "number": "3",
+      "text": "Why does it take 2 copies of 1/8 to show the same amount as 1 copy of 1/4? Explain your answer in words and pictures.",
+      "type": "reasoning",
+      "visual_model": "strip",
+      "skills": ["equivalent_fractions", "explanation"]
+    },
+    {
+      "id": "L22-P4",
+      "number": "4",
+      "text": "How many sixths does it take to make the same amount as 1/3? Explain your answer in words and pictures.",
+      "type": "reasoning",
+      "visual_model": "strip",
+      "answer": "2 sixths",
+      "skills": ["equivalent_fractions", "explanation"]
+    }
+  ]
+}

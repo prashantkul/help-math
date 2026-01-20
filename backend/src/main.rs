@@ -15,7 +15,7 @@ mod models;
 mod routes;
 mod services;
 
-use services::{AIService, AuthService, GradingService};
+use services::{AIService, AuthService, GradingService, TTSService};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -23,6 +23,7 @@ pub struct AppState {
     pub auth_service: Arc<AuthService>,
     pub ai_service: Arc<AIService>,
     pub grading_service: Arc<GradingService>,
+    pub tts_service: Arc<TTSService>,
 }
 
 #[tokio::main]
@@ -56,6 +57,9 @@ async fn main() -> anyhow::Result<()> {
         include_str!("../migrations/002_modules_lessons.sql"),
         include_str!("../migrations/003_seed_data.sql"),
         include_str!("../migrations/004_phase2_features.sql"),
+        include_str!("../migrations/005_add_class_grade.sql"),
+        include_str!("../migrations/006_soft_delete_classes.sql"),
+        include_str!("../migrations/007_module_scaffold_prompt.sql"),
     ];
 
     for migration in migrations {
@@ -70,17 +74,21 @@ async fn main() -> anyhow::Result<()> {
     // Initialize services
     let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-key-change-in-production".to_string());
     let anthropic_api_key = std::env::var("ANTHROPIC_API_KEY").unwrap_or_default();
+    let eleven_api_key = std::env::var("ELEVEN_API_KEY").unwrap_or_default();
+    let eleven_voice_id = std::env::var("ELEVEN_VOICE_ID").unwrap_or_default();
 
     let state = AppState {
         db,
         auth_service: Arc::new(AuthService::new(jwt_secret)),
         ai_service: Arc::new(AIService::new(anthropic_api_key)),
         grading_service: Arc::new(GradingService::new()),
+        tts_service: Arc::new(TTSService::new(eleven_api_key, eleven_voice_id)),
     };
 
     // Build protected teacher routes
     let teacher_routes = Router::new()
         .route("/classes", get(routes::list_classes).post(routes::create_class))
+        .route("/classes/:id", delete(routes::delete_class))
         .route("/classes/:id/students", get(routes::get_class_students).post(routes::create_student))
         .route("/classes/:id/students/bulk", post(routes::bulk_create_students))
         .route("/classes/:id/students/export", get(routes::export_students))
@@ -127,9 +135,19 @@ async fn main() -> anyhow::Result<()> {
         .route("/teacher/reset-password", post(routes::reset_password))
         .route("/student/join", post(routes::student_join));
 
+    // Build curriculum routes (public - no auth required)
+    let curriculum_routes = routes::curriculum_routes();
+
+    // Build TTS routes (public - no auth required)
+    let tts_routes = Router::new()
+        .route("/synthesize", post(routes::synthesize_speech))
+        .route("/status", get(routes::tts_status));
+
     // Build main router - auth routes first to avoid conflicts with nested routes
     let app = Router::new()
         .nest("/api/auth", auth_routes)
+        .nest("/api/tts", tts_routes)
+        .nest("/api", curriculum_routes)
         .nest("/api", teacher_routes)
         .nest("/api/student", student_routes)
         // CORS and tracing

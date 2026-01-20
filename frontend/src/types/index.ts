@@ -40,6 +40,7 @@ export interface Class {
   settings: ClassSettings;
   purpose?: string;
   description?: string;
+  grade: number;
   created_at: string;
 }
 
@@ -58,6 +59,7 @@ export interface Module {
   description?: string;
   sort_order: number;
   is_published: boolean;
+  scaffold_prompt?: string;
   created_at: string;
   lessons?: Lesson[];
 }
@@ -113,13 +115,10 @@ export interface ScaffoldStep {
   emoji_hint?: string;
 }
 
-export type StepType =
-  | 'find_objects'
-  | 'find_numbers'
-  | 'identify_operation'
-  | 'build_equation'
-  | 'solve'
-  | 'comprehension_check';
+// StepType is flexible - AI can generate any descriptive type based on curriculum
+// Common types include: find_objects, find_numbers, identify_operation, build_equation, solve, comprehension_check
+// But curriculum-specific types like identify_fractions, partition_whole, compare_fractions are also valid
+export type StepType = string;
 
 export type AnswerType =
   | 'multiple_choice'

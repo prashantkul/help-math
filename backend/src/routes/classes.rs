@@ -42,7 +42,7 @@ pub async fn list_classes(
     Extension(auth): Extension<TeacherAuth>,
 ) -> Result<Json<Vec<ClassResponse>>, (StatusCode, Json<serde_json::Value>)> {
     let classes: Vec<Class> = sqlx::query_as(
-        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, created_at FROM classes WHERE teacher_id = $1 ORDER BY created_at DESC"
+        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, grade, deleted_at, created_at FROM classes WHERE teacher_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC"
     )
     .bind(&auth.teacher_id)
     .fetch_all(&state.db)
@@ -74,8 +74,10 @@ pub async fn create_class(
     let join_code = generate_join_code();
     let settings = serde_json::to_string(&ClassSettings::default()).unwrap();
 
+    let grade = payload.grade.unwrap_or(3);
+
     sqlx::query(
-        "INSERT INTO classes (id, teacher_id, name, join_code, settings, purpose, description) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)"
+        "INSERT INTO classes (id, teacher_id, name, join_code, settings, purpose, description, grade) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)"
     )
     .bind(&id)
     .bind(&auth.teacher_id)
@@ -84,6 +86,7 @@ pub async fn create_class(
     .bind(&settings)
     .bind(&payload.purpose)
     .bind(&payload.description)
+    .bind(&grade)
     .execute(&state.db)
     .await
     .map_err(|e| {
@@ -95,7 +98,7 @@ pub async fn create_class(
     })?;
 
     let class: Class = sqlx::query_as(
-        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, created_at FROM classes WHERE id = $1"
+        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, grade, deleted_at, created_at FROM classes WHERE id = $1"
     )
     .bind(&id)
     .fetch_one(&state.db)
@@ -369,7 +372,7 @@ pub async fn update_class_settings(
 ) -> Result<Json<ClassResponse>, (StatusCode, Json<serde_json::Value>)> {
     // Get current class
     let current: Option<Class> = sqlx::query_as(
-        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, created_at FROM classes WHERE id = $1 AND teacher_id = $2"
+        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, grade, deleted_at, created_at FROM classes WHERE id = $1 AND teacher_id = $2 AND deleted_at IS NULL"
     )
     .bind(&class_id)
     .bind(&auth.teacher_id)
@@ -409,12 +412,14 @@ pub async fn update_class_settings(
     let name = payload.name.as_ref().unwrap_or(&current.name);
     let purpose = payload.purpose.as_ref().or(current.purpose.as_ref());
     let description = payload.description.as_ref().or(current.description.as_ref());
+    let grade = payload.grade.unwrap_or(current.grade.unwrap_or(3));
 
-    sqlx::query("UPDATE classes SET settings = $1::jsonb, name = $2, purpose = $3, description = $4 WHERE id = $5 AND teacher_id = $6")
+    sqlx::query("UPDATE classes SET settings = $1::jsonb, name = $2, purpose = $3, description = $4, grade = $5 WHERE id = $6 AND teacher_id = $7")
         .bind(&settings_json)
         .bind(name)
         .bind(purpose)
         .bind(description)
+        .bind(&grade)
         .bind(&class_id)
         .bind(&auth.teacher_id)
         .execute(&state.db)
@@ -428,7 +433,7 @@ pub async fn update_class_settings(
         })?;
 
     let class: Class = sqlx::query_as(
-        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, created_at FROM classes WHERE id = $1"
+        "SELECT id, teacher_id, name, join_code, settings::text, purpose, description, grade, deleted_at, created_at FROM classes WHERE id = $1"
     )
     .bind(&class_id)
     .fetch_one(&state.db)
@@ -442,6 +447,52 @@ pub async fn update_class_settings(
     })?;
 
     Ok(Json(ClassResponse::from(class)))
+}
+
+// Soft delete a class
+pub async fn delete_class(
+    State(state): State<AppState>,
+    Extension(auth): Extension<TeacherAuth>,
+    Path(class_id): Path<String>,
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
+    // Verify teacher owns this class (only owner can delete)
+    let class_exists: Option<(String,)> = sqlx::query_as(
+        "SELECT id FROM classes WHERE id = $1 AND teacher_id = $2 AND deleted_at IS NULL"
+    )
+    .bind(&class_id)
+    .bind(&auth.teacher_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to delete class"})),
+        )
+    })?;
+
+    if class_exists.is_none() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "Class not found or you don't have permission to delete it"})),
+        ));
+    }
+
+    // Soft delete by setting deleted_at timestamp
+    sqlx::query("UPDATE classes SET deleted_at = NOW() WHERE id = $1 AND teacher_id = $2")
+        .bind(&class_id)
+        .bind(&auth.teacher_id)
+        .execute(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Failed to delete class"})),
+            )
+        })?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 // Helper function to check if teacher can access a class (owner or co-teacher)

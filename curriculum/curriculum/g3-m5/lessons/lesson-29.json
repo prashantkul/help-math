@@ -1,0 +1,65 @@
+{
+  "lesson_number": 29,
+  "topic": "F",
+  "title": "Comparing Fractions with Symbols",
+  "objective": "Compare fractions with the same numerator using <, >, or =, and use a model to reason about their size.",
+  "standards": ["3.NF.3d"],
+  "problems": [
+    {
+      "id": "L29-P1-4",
+      "number": "1-4",
+      "text": "Label each shaded fraction. Use >, <, or = to compare.",
+      "type": "compare",
+      "visual_model": "mixed",
+      "skills": ["identify_fraction", "comparing_fractions", "same_numerator"]
+    },
+    {
+      "id": "L29-P5",
+      "number": "5",
+      "text": "Partition each number line into the units labeled on the left. Then, use the number lines to compare the fractions.",
+      "type": "compare",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {"row": "halves", "range": "0-1"},
+        {"row": "fourths", "range": "0-1"},
+        {"row": "eighths", "range": "0-1"}
+      ],
+      "comparisons": [
+        {"part": "a", "fraction_a": "3/8", "fraction_b": "3/4"},
+        {"part": "b", "fraction_a": "4/4", "fraction_b": "4/8"},
+        {"part": "c", "fraction_a": "2/4", "fraction_b": "2/8"}
+      ],
+      "skills": ["number_line", "comparing_fractions", "same_numerator"]
+    },
+    {
+      "id": "L29-P6",
+      "number": "6",
+      "text": "Draw your own model to compare: 3/10 and 3/5",
+      "type": "compare",
+      "visual_model": "strip",
+      "fractions_to_compare": ["3/10", "3/5"],
+      "answer": "3/10 < 3/5",
+      "skills": ["comparing_fractions", "drawing_models", "same_numerator"]
+    },
+    {
+      "id": "L29-P7",
+      "number": "7",
+      "text": "Draw your own model to compare: 2/6 and 2/8",
+      "type": "compare",
+      "visual_model": "strip",
+      "fractions_to_compare": ["2/6", "2/8"],
+      "answer": "2/6 > 2/8",
+      "skills": ["comparing_fractions", "drawing_models", "same_numerator"]
+    },
+    {
+      "id": "L29-P8",
+      "number": "8",
+      "text": "John ran 2 thirds of a kilometer after school. Nicholas ran 2 fifths of a kilometer after school. Who ran the shorter distance? Use the model below to support your answer. Be sure to label 1 whole as 1 kilometer.",
+      "type": "compare",
+      "visual_model": "strip",
+      "fractions_to_compare": ["2/3", "2/5"],
+      "answer": "Nicholas (2/5 < 2/3)",
+      "skills": ["comparing_fractions", "word_problem", "same_numerator"]
+    }
+  ]
+}

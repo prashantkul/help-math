@@ -1,0 +1,58 @@
+{
+  "lesson_number": 4,
+  "topic": "A",
+  "title": "Fractional Parts of Different Wholes",
+  "objective": "Represent and identify fractional parts of different wholes.",
+  "standards": ["3.G.2", "3.NF.1"],
+  "problems": [
+    {
+      "id": "L4-P1",
+      "number": "1",
+      "text": "Draw a picture of the yellow strip at 3 (or 4) different stations. Shade and label 1 fractional unit of each.",
+      "type": "shade_fraction",
+      "visual_model": "strip",
+      "skills": ["unit_fractions", "different_wholes"]
+    },
+    {
+      "id": "L4-P2",
+      "number": "2",
+      "text": "Draw a picture of the brown bar at 3 (or 4) different stations. Shade and label 1 fractional unit of each.",
+      "type": "shade_fraction",
+      "visual_model": "strip",
+      "skills": ["unit_fractions", "different_wholes"]
+    },
+    {
+      "id": "L4-P3",
+      "number": "3",
+      "text": "Draw a picture of the square at 3 (or 4) different stations. Shade and label 1 fractional unit of each.",
+      "type": "shade_fraction",
+      "visual_model": "rectangle",
+      "skills": ["unit_fractions", "different_wholes"]
+    },
+    {
+      "id": "L4-P4",
+      "number": "4",
+      "text": "Draw a picture of the clay at 3 (or 4) different stations. Shade and label 1 fractional unit of each.",
+      "type": "shade_fraction",
+      "visual_model": "discrete",
+      "skills": ["unit_fractions", "different_wholes"]
+    },
+    {
+      "id": "L4-P5",
+      "number": "5",
+      "text": "Draw a picture of the water at 3 (or 4) different stations. Shade and label 1 fractional unit of each.",
+      "type": "shade_fraction",
+      "visual_model": "beaker",
+      "skills": ["unit_fractions", "different_wholes"]
+    },
+    {
+      "id": "L4-P6",
+      "number": "6",
+      "text": "Extension: Draw a picture of the yarn at 3 (or 4) different stations.",
+      "type": "shade_fraction",
+      "visual_model": "strip",
+      "skills": ["unit_fractions", "different_wholes"],
+      "is_extension": true
+    }
+  ]
+}

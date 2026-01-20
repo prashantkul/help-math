@@ -107,8 +107,8 @@ pub async fn create_module(
 
     sqlx::query(
         r#"
-        INSERT INTO modules (id, class_id, name, description, sort_order)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO modules (id, class_id, name, description, sort_order, scaffold_prompt)
+        VALUES ($1, $2, $3, $4, $5, $6)
         "#,
     )
     .bind(&id)
@@ -116,6 +116,7 @@ pub async fn create_module(
     .bind(&payload.name)
     .bind(&payload.description)
     .bind(max_order + 1)
+    .bind(&payload.scaffold_prompt)
     .execute(&state.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -170,18 +171,20 @@ pub async fn update_module(
     let description = payload.description.or(module.description);
     let sort_order = payload.sort_order.unwrap_or(module.sort_order);
     let is_published = payload.is_published.unwrap_or(module.is_published);
+    let scaffold_prompt = payload.scaffold_prompt.or(module.scaffold_prompt);
 
     sqlx::query(
         r#"
         UPDATE modules
-        SET name = $1, description = $2, sort_order = $3, is_published = $4
-        WHERE id = $5
+        SET name = $1, description = $2, sort_order = $3, is_published = $4, scaffold_prompt = $5
+        WHERE id = $6
         "#,
     )
     .bind(&name)
     .bind(&description)
     .bind(sort_order)
     .bind(is_published)
+    .bind(&scaffold_prompt)
     .bind(&module_id)
     .execute(&state.db)
     .await

@@ -1,0 +1,53 @@
+{
+  "lesson_number": 23,
+  "topic": "E",
+  "title": "Equivalent Fractions with Visual Models",
+  "objective": "Generate simple equivalent fractions by using visual fraction models and the number line.",
+  "standards": ["3.NF.3a", "3.NF.3b"],
+  "problems": [
+    {
+      "id": "L23-P1",
+      "number": "1",
+      "text": "On the number line above, use a red colored pencil to divide each whole into fourths, and label each fraction above the line. Use a fraction strip to help you estimate, if necessary.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "range": {"start": 0, "end": 3},
+      "denominator": 4,
+      "skills": ["number_line", "partitioning"]
+    },
+    {
+      "id": "L23-P2",
+      "number": "2",
+      "text": "On the number line above, use a blue colored pencil to divide each whole into eighths, and label each fraction below the line. Refold your fraction strip from Problem 1 to help you estimate.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "denominator": 8,
+      "skills": ["number_line", "partitioning"]
+    },
+    {
+      "id": "L23-P3",
+      "number": "3",
+      "text": "List the fractions that name the same place on the number line.",
+      "type": "equivalent",
+      "visual_model": "number_line",
+      "skills": ["equivalent_fractions", "number_line"]
+    },
+    {
+      "id": "L23-P4",
+      "number": "4",
+      "text": "Using your number line to help, what red fraction and what blue fraction would be equal to 7/2? Draw the part of the number line below that would include these fractions, and label it.",
+      "type": "equivalent",
+      "visual_model": "number_line",
+      "target_fraction": "7/2",
+      "skills": ["equivalent_fractions", "number_line"]
+    },
+    {
+      "id": "L23-P5",
+      "number": "5",
+      "text": "Write two different fractions for the dot on the number line. You may use halves, thirds, fourths, fifths, sixths, or eighths. Use fraction strips to help you, if necessary.",
+      "type": "equivalent",
+      "visual_model": "number_line",
+      "skills": ["equivalent_fractions", "number_line"]
+    }
+  ]
+}

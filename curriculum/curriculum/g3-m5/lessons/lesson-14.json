@@ -1,0 +1,81 @@
+{
+  "lesson_number": 14,
+  "topic": "D",
+  "title": "Fractions on the Number Line (0 to 1)",
+  "objective": "Place fractions on a number line with endpoints 0 and 1.",
+  "standards": ["3.NF.2a", "3.NF.2b"],
+  "problems": [
+    {
+      "id": "L14-P1",
+      "number": "1",
+      "text": "Draw a number bond for each fractional unit. Partition the fraction strip to show the unit fractions of the number bond. Use the fraction strip to help you label the fractions on the number line. Be sure to label the fractions at 0 and 1.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {
+          "part": "a",
+          "fractional_unit": "halves",
+          "denominator": 2,
+          "labels": ["0/2", "1/2", "2/2"],
+          "endpoints": ["0", "1"]
+        },
+        {
+          "part": "b",
+          "fractional_unit": "thirds",
+          "denominator": 3,
+          "labels": ["0/3", "1/3", "2/3", "3/3"],
+          "endpoints": ["0", "1"]
+        },
+        {
+          "part": "c",
+          "fractional_unit": "fourths",
+          "denominator": 4,
+          "labels": ["0/4", "1/4", "2/4", "3/4", "4/4"],
+          "endpoints": ["0", "1"]
+        },
+        {
+          "part": "d",
+          "fractional_unit": "fifths",
+          "denominator": 5,
+          "labels": ["0/5", "1/5", "2/5", "3/5", "4/5", "5/5"],
+          "endpoints": ["0", "1"]
+        }
+      ],
+      "skills": ["number_line_partitioning", "labeling_fractions", "number_bond"]
+    },
+    {
+      "id": "L14-P2",
+      "number": "2",
+      "text": "Trevor needs to let his puppy outside every quarter (1 fourth) hour to potty train him. Draw and label a number line from 0 hours to 1 hour to show every 1 fourth hour. Include 0 fourths and 4 fourths hour. Label 0 hours and 1 hour, too.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "context": {
+        "real_world": "time",
+        "unit": "hours"
+      },
+      "denominator": 4,
+      "answer": {
+        "labels": ["0/4 (0 hours)", "1/4", "2/4", "3/4", "4/4 (1 hour)"],
+        "interval": "1/4 hour"
+      },
+      "skills": ["number_line_application", "real_world_fractions", "time"]
+    },
+    {
+      "id": "L14-P3",
+      "number": "3",
+      "text": "A ribbon is 1 meter long. Mrs. Lee wants to sew a bead every 1/5 meter. The first bead is at 1/5 meter. The last bead is at 1 meter. Draw and label a number line from 0 meters to 1 meter to show where Mrs. Lee will sew beads. Label all the fractions, including 0 fifths and 5 fifths. Label 0 meters and 1 meter, too.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "context": {
+        "real_world": "measurement",
+        "unit": "meters"
+      },
+      "denominator": 5,
+      "answer": {
+        "labels": ["0/5 (0 m)", "1/5", "2/5", "3/5", "4/5", "5/5 (1 m)"],
+        "bead_positions": ["1/5", "2/5", "3/5", "4/5", "5/5"]
+      },
+      "skills": ["number_line_application", "real_world_fractions", "measurement"]
+    }
+  ]
+}

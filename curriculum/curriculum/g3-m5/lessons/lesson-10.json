@@ -1,0 +1,60 @@
+{
+  "lesson_number": 10,
+  "topic": "C",
+  "title": "Comparing Unit Fractions with Fraction Strips",
+  "objective": "Compare unit fractions by reasoning about their size using fraction strips.",
+  "standards": ["3.NF.3d"],
+  "problems": [
+    {
+      "id": "L10-P1",
+      "number": "1",
+      "text": "Each fraction strip is 1 whole. All the fraction strips are equal in length. Color 1 fractional unit in each strip. Then, answer the questions below.",
+      "type": "shade_fraction",
+      "visual_model": "strip",
+      "fractions": ["1/2", "1/4", "1/8", "1/3", "1/6"],
+      "skills": ["unit_fractions", "comparing_fractions"]
+    },
+    {
+      "id": "L10-P2",
+      "number": "2",
+      "text": "Circle less than or greater than. Whisper the complete sentence.",
+      "type": "compare",
+      "sub_problems": [
+        {"part": "a", "fraction_a": "1/2", "fraction_b": "1/4"},
+        {"part": "b", "fraction_a": "1/6", "fraction_b": "1/2"},
+        {"part": "c", "fraction_a": "1/3", "fraction_b": "1/2"},
+        {"part": "d", "fraction_a": "1/3", "fraction_b": "1/6"},
+        {"part": "e", "fraction_a": "1/8", "fraction_b": "1/6"},
+        {"part": "f", "fraction_a": "1/8", "fraction_b": "1/4"},
+        {"part": "g", "fraction_a": "1/2", "fraction_b": "1/8"},
+        {"part": "h", "fraction_a": "9/8", "fraction_b": "2/2"}
+      ],
+      "skills": ["comparing_unit_fractions"]
+    },
+    {
+      "id": "L10-P3",
+      "number": "3",
+      "text": "Lily needs 1/3 cup of oil and 1/4 cup of water to make muffins. Will Lily use more oil or more water? Explain your answer using pictures, numbers, and words.",
+      "type": "compare",
+      "visual_model": "strip",
+      "fractions_to_compare": ["1/3", "1/4"],
+      "answer": "oil (1/3 > 1/4)",
+      "skills": ["comparing_unit_fractions", "word_problem", "explanation"]
+    },
+    {
+      "id": "L10-P4",
+      "number": "4",
+      "text": "Use >, <, or = to compare.",
+      "type": "compare",
+      "sub_problems": [
+        {"part": "a", "fraction_a": "1/3", "fraction_b": "1/5"},
+        {"part": "b", "fraction_a": "1/7", "fraction_b": "1/4"},
+        {"part": "c", "fraction_a": "1/6", "fraction_b": "1/6"},
+        {"part": "d", "fraction_a": "1/10", "fraction_b": "1/12"},
+        {"part": "e", "fraction_a": "1/16", "fraction_b": "1/11"},
+        {"part": "f", "fraction_a": "1", "fraction_b": "2/2"}
+      ],
+      "skills": ["comparing_unit_fractions", "symbols"]
+    }
+  ]
+}
