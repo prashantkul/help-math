@@ -63,6 +63,11 @@ class ApiClient {
         },
       });
 
+      // Handle 204 No Content (successful delete/update with no body)
+      if (response.status === 204) {
+        return { data: undefined as T };
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
