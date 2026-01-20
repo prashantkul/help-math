@@ -37,12 +37,10 @@ impl TTSService {
             .header("xi-api-key", &self.api_key)
             .json(&serde_json::json!({
                 "text": text,
-                "model_id": "eleven_monolingual_v1",
+                "model_id": "eleven_turbo_v2_5",
                 "voice_settings": {
                     "stability": 0.5,
-                    "similarity_boost": 0.75,
-                    "style": 0.0,
-                    "use_speaker_boost": true
+                    "similarity_boost": 0.75
                 }
             }))
             .send()
