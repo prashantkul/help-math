@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Delete } from 'lucide-react';
-import { Button, Card, ReadAloudButton } from '../../common';
+import { Button, Card, ReadAloudButton, VerticalMath } from '../../common';
 import type { ScaffoldStep } from '../../../types';
 
 interface StepProps {
@@ -47,6 +47,9 @@ export default function SolveStep({ step, onSubmit, result, onTryAgain }: StepPr
         </h2>
         <ReadAloudButton text={step.prompt_text} size="md" />
       </div>
+
+      {/* Vertical Math Display (for addition/subtraction) */}
+      <VerticalMath expression={step.prompt_text} className="mx-auto mb-6" />
 
       {/* Answer Display */}
       <div className="bg-white rounded-2xl p-6 mb-6">

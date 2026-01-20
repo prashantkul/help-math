@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Wand2, Check, X, Eye, Trash2, Send, CheckCircle2, Circle, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Upload, Wand2, Check, X, Eye, Trash2, Send, CheckCircle2, Circle, AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
-import { Button, Card, Loading, Modal } from '../../components/common';
+import { Button, Card, Loading, Modal, ProgressBar } from '../../components/common';
 import type { Problem, Class, ExtractedProblem, ProblemState } from '../../types';
 
 // Helper function to get state badge styling
@@ -47,6 +47,12 @@ export default function ProblemManager() {
   const [isReviewing, setIsReviewing] = useState(false);
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
 
+  // Batch scaffold generation state
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, currentProblem: '' });
+  const [batchErrors, setBatchErrors] = useState<string[]>([]);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !teacher) {
       navigate('/teacher/login');
@@ -73,6 +79,12 @@ export default function ProblemManager() {
         setLessonName(lessonResult.data.name);
         if (lessonResult.data.class_id) {
           setDerivedClassId(lessonResult.data.class_id);
+          // Also fetch class data to get ELL settings
+          const classesResult = await apiClient.getClasses();
+          if (classesResult.data) {
+            const cls = classesResult.data.find((c) => c.id === lessonResult.data!.class_id);
+            if (cls) setClassData(cls);
+          }
         }
       }
 
@@ -173,6 +185,60 @@ export default function ProblemManager() {
     }
   };
 
+  // Get problems that need scaffolding (draft with no steps)
+  const problemsNeedingScaffold = problems.filter(
+    (p) => (p.state === 'draft' || !p.state) && (!p.steps || p.steps.length === 0)
+  );
+
+  const handleBatchGenerateScaffolds = async () => {
+    if (problemsNeedingScaffold.length === 0) return;
+
+    setIsBatchGenerating(true);
+    setShowBatchModal(true);
+    setBatchErrors([]);
+    setBatchProgress({ current: 0, total: problemsNeedingScaffold.length, currentProblem: '' });
+
+    const updatedProblems = [...problems];
+    const errors: string[] = [];
+
+    for (let i = 0; i < problemsNeedingScaffold.length; i++) {
+      const problem = problemsNeedingScaffold[i];
+      setBatchProgress({
+        current: i + 1,
+        total: problemsNeedingScaffold.length,
+        currentProblem: problem.original_text.slice(0, 50) + (problem.original_text.length > 50 ? '...' : ''),
+      });
+
+      try {
+        const result = await apiClient.generateScaffold(problem.id, classData?.settings.ell_level || 2);
+
+        if (result.error) {
+          errors.push(`Problem "${problem.original_text.slice(0, 30)}...": ${result.error}`);
+        } else if (result.data) {
+          // Fetch updated problem
+          const problemResult = await apiClient.getProblem(problem.id);
+          if (problemResult.data) {
+            const idx = updatedProblems.findIndex((p) => p.id === problem.id);
+            if (idx !== -1) {
+              updatedProblems[idx] = problemResult.data;
+            }
+          }
+        }
+      } catch (error) {
+        errors.push(`Problem "${problem.original_text.slice(0, 30)}...": ${error}`);
+      }
+
+      // Small delay between API calls to avoid rate limiting
+      if (i < problemsNeedingScaffold.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+
+    setProblems(updatedProblems);
+    setBatchErrors(errors);
+    setIsBatchGenerating(false);
+  };
+
   const handleReview = async (problemId: string) => {
     setIsReviewing(true);
     const result = await apiClient.reviewProblem(problemId);
@@ -251,6 +317,16 @@ export default function ProblemManager() {
                 <Upload className="w-4 h-4" />
                 {isUploading ? 'Uploading...' : 'Upload PDF'}
               </button>
+              {problemsNeedingScaffold.length > 0 && (
+                <button
+                  onClick={handleBatchGenerateScaffolds}
+                  disabled={isBatchGenerating}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Zap className="w-4 h-4" />
+                  Generate All ({problemsNeedingScaffold.length})
+                </button>
+              )}
               <button
                 onClick={() => setShowAddModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
@@ -621,6 +697,78 @@ export default function ProblemManager() {
               Regenerate
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Batch Scaffold Generation Modal */}
+      <Modal
+        isOpen={showBatchModal}
+        onClose={() => !isBatchGenerating && setShowBatchModal(false)}
+        title="Generating Scaffolds"
+      >
+        <div className="space-y-4">
+          {isBatchGenerating ? (
+            <>
+              <div className="text-center py-4">
+                <div className="flex justify-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+                    <Wand2 className="w-6 h-6 text-amber-600 animate-pulse" />
+                  </div>
+                </div>
+                <p className="text-lg font-semibold text-gray-800 mb-2">
+                  Generating scaffold {batchProgress.current} of {batchProgress.total}
+                </p>
+                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                  {batchProgress.currentProblem}
+                </p>
+              </div>
+              <ProgressBar
+                current={batchProgress.current}
+                total={batchProgress.total}
+                showSteps={false}
+              />
+              <p className="text-xs text-center text-gray-500">
+                Please wait while AI generates scaffolds for each problem...
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="text-center py-4">
+                <div className="flex justify-center mb-4">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-lg font-semibold text-gray-800 mb-2">
+                  Batch Generation Complete!
+                </p>
+                <p className="text-sm text-gray-600">
+                  Successfully generated scaffolds for {batchProgress.total - batchErrors.length} of {batchProgress.total} problems.
+                </p>
+              </div>
+
+              {batchErrors.length > 0 && (
+                <div className="bg-red-50 rounded-lg p-4">
+                  <p className="text-sm font-medium text-red-800 mb-2">
+                    {batchErrors.length} problem{batchErrors.length > 1 ? 's' : ''} failed:
+                  </p>
+                  <ul className="text-sm text-red-600 space-y-1 max-h-32 overflow-y-auto">
+                    {batchErrors.map((error, i) => (
+                      <li key={i} className="line-clamp-2">• {error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => setShowBatchModal(false)}
+              >
+                Done
+              </Button>
+            </>
+          )}
         </div>
       </Modal>
     </div>

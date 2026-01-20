@@ -4,7 +4,7 @@ import { ArrowLeft, Home } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useStudentAuth } from '../../hooks/useAuth';
 import { useProblemSession } from '../../hooks/useStudentProgress';
-import { Button, Card, Loading, ProgressBar, ReadAloudButton } from '../../components/common';
+import { Button, Card, Loading, ProgressBar, ReadAloudButton, AnnotatableText } from '../../components/common';
 import type { ScaffoldStep } from '../../types';
 
 // Step components
@@ -193,17 +193,19 @@ export default function ProblemSolver() {
               </h2>
             </div>
 
-            {/* Problem Text */}
+            {/* Problem Text with Annotations */}
             <div className="speech-bubble mb-8 text-left">
-              <div className="flex items-start justify-between">
-                <p className="text-xl text-gray-800 leading-relaxed pr-4">
-                  {problem.simplified_text || problem.original_text}
-                </p>
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-gray-500 text-sm">Read and mark important parts:</span>
                 <ReadAloudButton
                   text={problem.simplified_text || problem.original_text}
                   size="lg"
                 />
               </div>
+              <AnnotatableText
+                text={problem.simplified_text || problem.original_text}
+                showInstructions={true}
+              />
             </div>
 
             <Button
