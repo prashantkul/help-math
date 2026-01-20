@@ -20,14 +20,19 @@ pub fn curriculum_routes() -> Router<AppState> {
 }
 
 fn get_bucket() -> Result<Bucket, (StatusCode, String)> {
+    // Support both custom names and Railway's default AWS_* names
     let bucket_name = env::var("CURRICULUM_BUCKET_NAME")
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "CURRICULUM_BUCKET_NAME not set".to_string()))?;
+        .or_else(|_| env::var("AWS_S3_BUCKET_NAME"))
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "CURRICULUM_BUCKET_NAME or AWS_S3_BUCKET_NAME not set".to_string()))?;
     let endpoint = env::var("RAILWAY_BUCKET_ENDPOINT")
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "RAILWAY_BUCKET_ENDPOINT not set".to_string()))?;
+        .or_else(|_| env::var("AWS_ENDPOINT_URL"))
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "RAILWAY_BUCKET_ENDPOINT or AWS_ENDPOINT_URL not set".to_string()))?;
     let access_key = env::var("BUCKET_ACCESS_KEY_ID")
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "BUCKET_ACCESS_KEY_ID not set".to_string()))?;
+        .or_else(|_| env::var("AWS_ACCESS_KEY_ID"))
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "BUCKET_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID not set".to_string()))?;
     let secret_key = env::var("BUCKET_SECRET_ACCESS_KEY")
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "BUCKET_SECRET_ACCESS_KEY not set".to_string()))?;
+        .or_else(|_| env::var("AWS_SECRET_ACCESS_KEY"))
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "BUCKET_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY not set".to_string()))?;
 
     let region = Region::Custom {
         region: "auto".to_string(),
