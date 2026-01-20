@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Delete } from 'lucide-react';
-import { Button, Card, ReadAloudButton, VerticalMath } from '../../common';
+import { Button, Card, ReadAloudButton, VerticalMath, AnnotatableText } from '../../common';
 import type { ScaffoldStep } from '../../../types';
 
 interface StepProps {
@@ -40,12 +40,16 @@ export default function SolveStep({ step, onSubmit, result, onTryAgain }: StepPr
 
   return (
     <Card variant="warm" padding="lg" className="text-center">
-      {/* Prompt */}
-      <div className="flex items-center justify-center gap-3 mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          {step.prompt_text}
-        </h2>
-        <ReadAloudButton text={step.prompt_text} size="md" />
+      {/* Prompt with annotation support */}
+      <div className="mb-6">
+        <div className="flex justify-end mb-2">
+          <ReadAloudButton text={step.prompt_text} size="md" />
+        </div>
+        <AnnotatableText
+          text={step.prompt_text}
+          showInstructions={false}
+          className="text-2xl font-bold text-gray-800"
+        />
       </div>
 
       {/* Vertical Math Display (for addition/subtraction) */}

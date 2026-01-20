@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, ReadAloudButton } from '../../common';
+import { Button, Card, ReadAloudButton, AnnotatableText } from '../../common';
 import type { ScaffoldStep } from '../../../types';
 
 interface StepProps {
@@ -36,12 +36,16 @@ export default function FindObjectsStep({ step, onSubmit, result, onTryAgain }: 
 
   return (
     <Card variant="warm" padding="lg" className="text-center">
-      {/* Prompt */}
-      <div className="flex items-center justify-center gap-3 mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          {step.prompt_text}
-        </h2>
-        <ReadAloudButton text={step.prompt_text} size="md" />
+      {/* Prompt with annotation support */}
+      <div className="mb-6">
+        <div className="flex justify-end mb-2">
+          <ReadAloudButton text={step.prompt_text} size="md" />
+        </div>
+        <AnnotatableText
+          text={step.prompt_text}
+          showInstructions={false}
+          className="text-2xl font-bold text-gray-800"
+        />
       </div>
 
       {/* Simplified text if available */}
