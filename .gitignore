@@ -34,3 +34,9 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+
+# SQLite databases (moved to PostgreSQL)
+*.db
+!Thumbs.db
+*.sqlite
+*.sqlite3
