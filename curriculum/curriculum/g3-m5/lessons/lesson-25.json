@@ -1,0 +1,34 @@
+{
+  "lesson_number": 25,
+  "topic": "E",
+  "title": "Whole Number Fractions with Unit Interval 1",
+  "objective": "Express whole number fractions on the number line when the unit interval is 1.",
+  "standards": ["3.NF.3c"],
+  "problems": [
+    {
+      "id": "L25-P1",
+      "number": "1",
+      "text": "Label the following models as a fraction inside the dotted box.",
+      "type": "identify_fraction",
+      "visual_model": "mixed",
+      "skills": ["whole_as_fraction", "improper_fractions"]
+    },
+    {
+      "id": "L25-P2",
+      "number": "2",
+      "text": "Fill in the missing whole numbers in the boxes below the number line. Rename the whole numbers as fractions in the boxes above the number line.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "range": {"start": 0, "end": 16},
+      "skills": ["number_line", "whole_as_fraction"]
+    },
+    {
+      "id": "L25-P3",
+      "number": "3",
+      "text": "Explain the difference between these two fractions with words and pictures: 2/1 and 2/2",
+      "type": "reasoning",
+      "visual_model": "mixed",
+      "skills": ["reasoning", "whole_as_fraction", "explanation"]
+    }
+  ]
+}

@@ -56,6 +56,9 @@ async fn main() -> anyhow::Result<()> {
         include_str!("../migrations/002_modules_lessons.sql"),
         include_str!("../migrations/003_seed_data.sql"),
         include_str!("../migrations/004_phase2_features.sql"),
+        include_str!("../migrations/005_add_class_grade.sql"),
+        include_str!("../migrations/006_soft_delete_classes.sql"),
+        include_str!("../migrations/007_module_scaffold_prompt.sql"),
     ];
 
     for migration in migrations {
@@ -81,6 +84,7 @@ async fn main() -> anyhow::Result<()> {
     // Build protected teacher routes
     let teacher_routes = Router::new()
         .route("/classes", get(routes::list_classes).post(routes::create_class))
+        .route("/classes/:id", delete(routes::delete_class))
         .route("/classes/:id/students", get(routes::get_class_students).post(routes::create_student))
         .route("/classes/:id/students/bulk", post(routes::bulk_create_students))
         .route("/classes/:id/students/export", get(routes::export_students))
@@ -127,9 +131,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/teacher/reset-password", post(routes::reset_password))
         .route("/student/join", post(routes::student_join));
 
+    // Build curriculum routes (public - no auth required)
+    let curriculum_routes = routes::curriculum_routes();
+
     // Build main router - auth routes first to avoid conflicts with nested routes
     let app = Router::new()
         .nest("/api/auth", auth_routes)
+        .nest("/api", curriculum_routes)
         .nest("/api", teacher_routes)
         .nest("/api/student", student_routes)
         // CORS and tracing

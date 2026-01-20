@@ -1,0 +1,49 @@
+{
+  "lesson_number": 6,
+  "topic": "B",
+  "title": "Building Non-Unit Fractions",
+  "objective": "Build non-unit fractions less than one whole from unit fractions.",
+  "standards": ["3.NF.1"],
+  "problems": [
+    {
+      "id": "L6-P1",
+      "number": "1",
+      "text": "Complete the number sentence. Estimate to partition each strip equally, write the unit fraction inside each unit, and shade the answer.",
+      "type": "shade_fraction",
+      "visual_model": "strip",
+      "sub_problems": [
+        {"part": "a", "instruction": "3 fourths = __", "answer": "3/4"},
+        {"part": "b", "instruction": "3 sevenths = __", "answer": "3/7"},
+        {"part": "c", "instruction": "4 fifths = __", "answer": "4/5"},
+        {"part": "d", "instruction": "2 sixths = __", "answer": "2/6"}
+      ],
+      "skills": ["non_unit_fractions", "partitioning", "shading"]
+    },
+    {
+      "id": "L6-P2",
+      "number": "2",
+      "text": "Mr. Stevens bought 8 liters of soda for a party. His guests drank 1 liter.",
+      "type": "fraction_word_problem",
+      "visual_model": "discrete",
+      "sub_problems": [
+        {"part": "a", "question": "What fraction of the soda did his guests drink?", "answer": "1/8"},
+        {"part": "b", "question": "What fraction of the soda was left?", "answer": "7/8"}
+      ],
+      "skills": ["word_problem", "unit_fractions", "part_whole"]
+    },
+    {
+      "id": "L6-P3",
+      "number": "3",
+      "text": "Fill in the chart: Total Number of Equal Parts, Total Number of Shaded Equal Parts, Unit Fraction, Fraction Shaded.",
+      "type": "identify_fraction",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {"part": "a"},
+        {"part": "b"},
+        {"part": "c"},
+        {"part": "d"}
+      ],
+      "skills": ["identify_fraction", "unit_fraction", "non_unit_fraction"]
+    }
+  ]
+}

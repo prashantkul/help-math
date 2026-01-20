@@ -1,0 +1,31 @@
+{
+  "lesson_number": 24,
+  "topic": "E",
+  "title": "Whole Numbers as Fractions",
+  "objective": "Express whole numbers as fractions and recognize equivalence with different units.",
+  "standards": ["3.NF.3c"],
+  "problems": [
+    {
+      "id": "L24-P1",
+      "number": "1",
+      "text": "Complete the number bond as indicated by the fractional unit. Partition the number line into the given fractional unit, and label the fractions. Rename 0 and 1 as fractions of the given unit.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {"fractional_unit": "halves", "whole": 1},
+        {"fractional_unit": "thirds", "whole": 1},
+        {"fractional_unit": "fourths", "whole": 1},
+        {"fractional_unit": "fifths", "whole": 1}
+      ],
+      "skills": ["number_line", "whole_as_fraction", "number_bond"]
+    },
+    {
+      "id": "L24-P2",
+      "number": "2",
+      "text": "Circle all the fractions in Problem 1 that are equal to 1. Write them in a number sentence below: 2/2 = ___ = ___ = ___",
+      "type": "equivalent",
+      "answer": "2/2 = 3/3 = 4/4 = 5/5",
+      "skills": ["whole_as_fraction", "equivalent_fractions"]
+    }
+  ]
+}

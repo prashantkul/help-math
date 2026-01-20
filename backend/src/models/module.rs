@@ -10,6 +10,7 @@ pub struct Module {
     pub description: Option<String>,
     pub sort_order: i32,
     pub is_published: bool,
+    pub scaffold_prompt: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -17,6 +18,7 @@ pub struct Module {
 pub struct CreateModule {
     pub name: String,
     pub description: Option<String>,
+    pub scaffold_prompt: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -25,6 +27,7 @@ pub struct UpdateModule {
     pub description: Option<String>,
     pub sort_order: Option<i32>,
     pub is_published: Option<bool>,
+    pub scaffold_prompt: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -35,6 +38,7 @@ pub struct ModuleResponse {
     pub description: Option<String>,
     pub sort_order: i32,
     pub is_published: bool,
+    pub scaffold_prompt: Option<String>,
     pub created_at: String,
     pub lessons: Option<Vec<super::LessonResponse>>,
 }
@@ -48,6 +52,7 @@ impl ModuleResponse {
             description: module.description,
             sort_order: module.sort_order,
             is_published: module.is_published,
+            scaffold_prompt: module.scaffold_prompt,
             created_at: module.created_at.to_rfc3339(),
             lessons: lessons.map(|l| l.into_iter().map(super::LessonResponse::from_lesson).collect()),
         }

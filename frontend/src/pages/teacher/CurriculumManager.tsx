@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, ChevronRight, FolderOpen, FileText, Trash2, Edit2, Check, X, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronRight, FolderOpen, FileText, Trash2, Edit2, Check, X, Clock, Calendar, Download, Settings, Sparkles } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
+import { curriculumApi } from '../../api/curriculumApi';
 import { Button, Card, Loading, Modal } from '../../components/common';
 import type { Module, Class, Lesson } from '../../types';
+import type { ModuleSummary, CurriculumModule } from '../../types/curriculum';
 
 export default function CurriculumManager() {
   const { classId } = useParams<{ classId: string }>();
@@ -24,6 +26,13 @@ export default function CurriculumManager() {
   const [newDescription, setNewDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
+  // Curriculum import states
+  const [curriculumModules, setCurriculumModules] = useState<ModuleSummary[]>([]);
+  const [selectedCurriculumModule, setSelectedCurriculumModule] = useState<string>('');
+  const [selectedCurriculumModuleData, setSelectedCurriculumModuleData] = useState<CurriculumModule | null>(null);
+  const [loadingCurriculum, setLoadingCurriculum] = useState(false);
+  const [importProgress, setImportProgress] = useState<string>('');
+
   // Edit states
   const [editingModule, setEditingModule] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<string | null>(null);
@@ -36,6 +45,13 @@ export default function CurriculumManager() {
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleAfterLesson, setScheduleAfterLesson] = useState('');
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  // Scaffold prompt states
+  const [showScaffoldPromptModal, setShowScaffoldPromptModal] = useState(false);
+  const [selectedModuleForPrompt, setSelectedModuleForPrompt] = useState<Module | null>(null);
+  const [scaffoldPrompt, setScaffoldPrompt] = useState('');
+  const [newScaffoldPrompt, setNewScaffoldPrompt] = useState('');
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !teacher) {
@@ -73,19 +89,119 @@ export default function CurriculumManager() {
     setIsLoading(false);
   };
 
+  const loadCurriculumModules = async () => {
+    if (!classData) return;
+    setLoadingCurriculum(true);
+    try {
+      const data = await curriculumApi.getModules();
+      // Filter by class grade
+      const filtered = data.modules.filter((m) => m.grade === classData.grade);
+      setCurriculumModules(filtered);
+    } catch (e) {
+      console.error('Failed to load curriculum modules:', e);
+    } finally {
+      setLoadingCurriculum(false);
+    }
+  };
+
+  const handleOpenAddModuleModal = () => {
+    setShowAddModuleModal(true);
+    loadCurriculumModules();
+  };
+
+  const handleSelectCurriculumModule = async (moduleId: string) => {
+    setSelectedCurriculumModule(moduleId);
+    setSelectedCurriculumModuleData(null);
+    const selected = curriculumModules.find((m) => m.id === moduleId);
+    if (selected) {
+      setNewName(selected.name);
+      setNewDescription(selected.title);
+      // Fetch full module details to get lesson list
+      try {
+        const fullModule = await curriculumApi.getModule(moduleId);
+        setSelectedCurriculumModuleData(fullModule);
+      } catch (e) {
+        console.error('Failed to load curriculum module details:', e);
+      }
+    }
+  };
+
   const handleAddModule = async () => {
     if (!classId || !newName.trim()) return;
 
     setIsCreating(true);
-    const result = await apiClient.createModule(classId, newName.trim(), newDescription.trim() || undefined);
+    setImportProgress('Creating module...');
+
+    const result = await apiClient.createModule(classId, newName.trim(), newDescription.trim() || undefined, newScaffoldPrompt.trim() || undefined);
     if (result.data) {
-      setModules([...modules, result.data]);
-      setExpandedModule(result.data.id);
+      const newModule = result.data;
+
+      // If a curriculum module was selected, import its lessons
+      if (selectedCurriculumModuleData) {
+        // Get all unique lesson numbers from topics
+        const lessonNumbers = new Set<number>();
+        selectedCurriculumModuleData.topics.forEach(topic => {
+          topic.lessons.forEach(lessonNum => lessonNumbers.add(lessonNum));
+        });
+
+        const sortedLessonNumbers = Array.from(lessonNumbers).sort((a, b) => a - b);
+        const createdLessons: Lesson[] = [];
+
+        for (let i = 0; i < sortedLessonNumbers.length; i++) {
+          const lessonNum = sortedLessonNumbers[i];
+          setImportProgress(`Importing lesson ${i + 1} of ${sortedLessonNumbers.length}...`);
+          try {
+            // Fetch lesson details from curriculum
+            const curriculumLesson = await curriculumApi.getLesson(selectedCurriculumModule, lessonNum);
+
+            // Create the lesson in our system
+            const lessonResult = await apiClient.createLesson(
+              newModule.id,
+              `Lesson ${lessonNum}: ${curriculumLesson.objective.slice(0, 50)}${curriculumLesson.objective.length > 50 ? '...' : ''}`,
+              curriculumLesson.objective
+            );
+
+            if (lessonResult.data) {
+              const createdLesson = lessonResult.data;
+
+              // Import problems for this lesson
+              if (curriculumLesson.problems && curriculumLesson.problems.length > 0) {
+                let problemCount = 0;
+                for (const problem of curriculumLesson.problems) {
+                  problemCount++;
+                  setImportProgress(`Lesson ${i + 1}/${sortedLessonNumbers.length}: Importing problem ${problemCount}/${curriculumLesson.problems.length}...`);
+                  try {
+                    await apiClient.createLessonProblem(createdLesson.id, problem.text);
+                  } catch (e) {
+                    console.error(`Failed to import problem ${problem.id}:`, e);
+                  }
+                }
+                createdLesson.problem_count = problemCount;
+              }
+
+              createdLessons.push(createdLesson);
+            }
+          } catch (e) {
+            console.error(`Failed to import lesson ${lessonNum}:`, e);
+          }
+        }
+
+        // Update the module with the created lessons
+        newModule.lessons = createdLessons;
+      }
+
+      setModules([...modules, newModule]);
+      setExpandedModule(newModule.id);
     }
+
     setIsCreating(false);
+    setImportProgress('');
     setShowAddModuleModal(false);
     setNewName('');
     setNewDescription('');
+    setNewScaffoldPrompt('');
+    setSelectedCurriculumModule('');
+    setSelectedCurriculumModuleData(null);
   };
 
   const handleAddLesson = async () => {
@@ -158,6 +274,30 @@ export default function CurriculumManager() {
     setShowScheduleModal(true);
   };
 
+  const handleOpenScaffoldPromptModal = (module: Module) => {
+    setSelectedModuleForPrompt(module);
+    setScaffoldPrompt(module.scaffold_prompt || '');
+    setShowScaffoldPromptModal(true);
+  };
+
+  const handleSaveScaffoldPrompt = async () => {
+    if (!selectedModuleForPrompt) return;
+
+    setIsSavingPrompt(true);
+    const result = await apiClient.updateModule(selectedModuleForPrompt.id, {
+      scaffold_prompt: scaffoldPrompt || undefined,
+    });
+    setIsSavingPrompt(false);
+
+    if (result.data) {
+      setModules(modules.map(m =>
+        m.id === selectedModuleForPrompt.id ? { ...m, scaffold_prompt: scaffoldPrompt } : m
+      ));
+      setShowScaffoldPromptModal(false);
+      setSelectedModuleForPrompt(null);
+    }
+  };
+
   const handleSaveSchedule = async () => {
     if (!selectedLesson) return;
 
@@ -216,7 +356,7 @@ export default function CurriculumManager() {
             </div>
             <Button
               variant="outline"
-              onClick={() => setShowAddModuleModal(true)}
+              onClick={handleOpenAddModuleModal}
               className="bg-white/10 hover:bg-white/20 text-white border-white/30"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -235,7 +375,7 @@ export default function CurriculumManager() {
             <p className="text-gray-600 mb-4">
               Create modules to organize your lessons and problems.
             </p>
-            <Button variant="primary" onClick={() => setShowAddModuleModal(true)}>
+            <Button variant="primary" onClick={handleOpenAddModuleModal}>
               <Plus className="w-4 h-4 mr-2" />
               Create First Module
             </Button>
@@ -292,6 +432,22 @@ export default function CurriculumManager() {
                     <span className="text-sm text-gray-500">
                       {module.lessons?.length || 0} lesson{(module.lessons?.length || 0) !== 1 ? 's' : ''}
                     </span>
+                    {module.scaffold_prompt && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        AI Prompt
+                      </span>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenScaffoldPromptModal(module);
+                      }}
+                      className={`p-1 rounded ${module.scaffold_prompt ? 'text-purple-600 hover:bg-purple-50' : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'}`}
+                      title="AI Scaffolding Settings"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -439,39 +595,130 @@ export default function CurriculumManager() {
       {/* Add Module Modal */}
       <Modal
         isOpen={showAddModuleModal}
-        onClose={() => setShowAddModuleModal(false)}
+        onClose={() => {
+          setShowAddModuleModal(false);
+          setSelectedCurriculumModule('');
+          setSelectedCurriculumModuleData(null);
+          setNewName('');
+          setNewDescription('');
+          setNewScaffoldPrompt('');
+          setImportProgress('');
+        }}
         title="Add Module"
       >
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Module Name
-            </label>
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g., Unit 1: Addition & Subtraction"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none"
-              autoFocus
-            />
+          {/* Import from Curriculum */}
+          {curriculumModules.length > 0 && (
+            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Download className="w-4 h-4 text-blue-600" />
+                <label className="text-sm font-medium text-blue-800">
+                  Import from Grade {classData?.grade} Curriculum
+                </label>
+              </div>
+              <select
+                value={selectedCurriculumModule}
+                onChange={(e) => handleSelectCurriculumModule(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none bg-white"
+              >
+                <option value="">-- Select a curriculum module --</option>
+                {curriculumModules.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}: {m.title} ({m.lesson_count} lessons)
+                  </option>
+                ))}
+              </select>
+              {selectedCurriculumModuleData && (
+                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm text-green-800 font-medium">
+                    Will import {(() => {
+                      const lessonNumbers = new Set<number>();
+                      selectedCurriculumModuleData.topics.forEach(topic => {
+                        topic.lessons.forEach(lessonNum => lessonNumbers.add(lessonNum));
+                      });
+                      return lessonNumbers.size;
+                    })()} lessons from this curriculum module
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    Topics: {selectedCurriculumModuleData.topics.map(t => t.code).join(', ')}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {loadingCurriculum && (
+            <p className="text-sm text-gray-500">Loading curriculum modules...</p>
+          )}
+          {!loadingCurriculum && curriculumModules.length === 0 && classData && (
+            <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+              No curriculum modules available for Grade {classData.grade}.
+            </p>
+          )}
+
+          <div className="border-t pt-4">
+            <p className="text-xs text-gray-500 mb-3">Or create a custom module:</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Module Name
+                </label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g., Unit 1: Addition & Subtraction"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description (optional)
+                </label>
+                <textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Brief description of this module..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none min-h-[80px]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  AI Scaffold Prompt (optional)
+                </label>
+                <textarea
+                  value={newScaffoldPrompt}
+                  onChange={(e) => setNewScaffoldPrompt(e.target.value)}
+                  placeholder="e.g., Generate steps in Spanish, use visual models..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-purple-500 focus:outline-none min-h-[60px] text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Custom instructions for AI when generating scaffolding. You can also set this later.
+                </p>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description (optional)
-            </label>
-            <textarea
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Brief description of this module..."
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none min-h-[80px]"
-            />
-          </div>
+
+          {importProgress && (
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800">{importProgress}</p>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => setShowAddModuleModal(false)}
+              onClick={() => {
+                setShowAddModuleModal(false);
+                setSelectedCurriculumModule('');
+                setSelectedCurriculumModuleData(null);
+                setNewName('');
+                setNewDescription('');
+                setNewScaffoldPrompt('');
+                setImportProgress('');
+              }}
+              disabled={isCreating}
             >
               Cancel
             </Button>
@@ -482,7 +729,7 @@ export default function CurriculumManager() {
               isLoading={isCreating}
               disabled={!newName.trim() || isCreating}
             >
-              Add Module
+              {selectedCurriculumModuleData ? 'Import Module & Lessons' : 'Add Module'}
             </Button>
           </div>
         </div>
@@ -682,6 +929,116 @@ export default function CurriculumManager() {
                   }
                 >
                   Save Schedule
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
+
+      {/* AI Scaffold Prompt Modal */}
+      <Modal
+        isOpen={showScaffoldPromptModal}
+        onClose={() => {
+          setShowScaffoldPromptModal(false);
+          setSelectedModuleForPrompt(null);
+          setScaffoldPrompt('');
+        }}
+        title="AI Scaffolding Settings"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {selectedModuleForPrompt && (
+            <>
+              <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  <p className="font-medium text-purple-800">{selectedModuleForPrompt.name}</p>
+                </div>
+                <p className="text-sm text-purple-600 mt-1">
+                  Customize how AI generates scaffolding steps for problems in this module.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Custom AI Instructions
+                </label>
+                <textarea
+                  value={scaffoldPrompt}
+                  onChange={(e) => setScaffoldPrompt(e.target.value)}
+                  placeholder="Enter custom instructions for the AI..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-purple-500 focus:outline-none min-h-[120px] font-mono text-sm"
+                />
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <p className="text-sm font-medium text-gray-700 mb-3">Example Prompts:</p>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setScaffoldPrompt('Generate all scaffolding steps in Spanish. Use simple Spanish vocabulary appropriate for 3rd graders.')}
+                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-gray-800">🇪🇸 Spanish Language</p>
+                    <p className="text-xs text-gray-500 mt-1">Generate all scaffolding steps in Spanish...</p>
+                  </button>
+                  <button
+                    onClick={() => setScaffoldPrompt('Use visual representations like number lines, arrays, and area models in the hints. Reference manipulatives students can use (counters, base-ten blocks).')}
+                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-gray-800">📐 Visual & Manipulatives</p>
+                    <p className="text-xs text-gray-500 mt-1">Use visual representations like number lines, arrays...</p>
+                  </button>
+                  <button
+                    onClick={() => setScaffoldPrompt('Focus on fraction concepts. Use pizza slices, chocolate bars, and other food items as visual examples. Emphasize equal parts and fair sharing.')}
+                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-gray-800">🍕 Fractions with Food</p>
+                    <p className="text-xs text-gray-500 mt-1">Focus on fraction concepts with pizza, chocolate bars...</p>
+                  </button>
+                  <button
+                    onClick={() => setScaffoldPrompt('Use very simple vocabulary (Lexile 200-300). Break down each step into smaller sub-steps. Provide 3-4 hints per step instead of 2.')}
+                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-gray-800">📖 Extra Support (Newcomer ELL)</p>
+                    <p className="text-xs text-gray-500 mt-1">Use very simple vocabulary, break into smaller steps...</p>
+                  </button>
+                  <button
+                    onClick={() => setScaffoldPrompt('Include real-world connections to money and shopping. Use prices, making change, and buying items as examples.')}
+                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-gray-800">💰 Money & Shopping Context</p>
+                    <p className="text-xs text-gray-500 mt-1">Include real-world connections to money and shopping...</p>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowScaffoldPromptModal(false);
+                    setSelectedModuleForPrompt(null);
+                    setScaffoldPrompt('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setScaffoldPrompt('')}
+                  disabled={!scaffoldPrompt}
+                >
+                  Clear
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={handleSaveScaffoldPrompt}
+                  isLoading={isSavingPrompt}
+                >
+                  Save Settings
                 </Button>
               </div>
             </>

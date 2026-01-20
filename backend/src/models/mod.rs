@@ -7,6 +7,7 @@ pub mod assignment;
 pub mod class_teacher;
 pub mod module;
 pub mod lesson;
+pub mod curriculum;
 
 pub use teacher::*;
 pub use class::*;
@@ -17,3 +18,4 @@ pub use assignment::*;
 pub use class_teacher::*;
 pub use module::*;
 pub use lesson::*;
+pub use curriculum::*;

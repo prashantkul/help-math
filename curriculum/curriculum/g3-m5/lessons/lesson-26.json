@@ -1,0 +1,36 @@
+{
+  "lesson_number": 26,
+  "topic": "E",
+  "title": "Decomposing Whole Number Fractions",
+  "objective": "Decompose whole number fractions greater than 1 using whole number equivalence with various models.",
+  "standards": ["3.NF.3c"],
+  "problems": [
+    {
+      "id": "L26-P1",
+      "number": "1",
+      "text": "Partition the number line to show the fractional units. Then, draw number bonds using copies of 1 whole for the circled whole numbers.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {
+          "fractional_unit": "halves",
+          "range": {"start": 0, "end": 2},
+          "equations": ["0 = __ halves, 0 = __/2", "1 = __ halves, 1 = __/2", "2 = __ halves, 2 = 4/2"]
+        },
+        {
+          "fractional_unit": "thirds",
+          "range": {"start": 2, "end": 4},
+          "equations": ["2 = __ thirds, 2 = __/3", "3 = __ thirds, 3 = __/3", "4 = __ thirds, 4 = __/3"]
+        }
+      ],
+      "skills": ["number_line", "decomposition", "whole_as_fraction"]
+    },
+    {
+      "id": "L26-P2",
+      "number": "2",
+      "text": "Write the fractions that name the whole numbers for each fractional unit.",
+      "type": "equivalent",
+      "skills": ["whole_as_fraction", "equivalent_fractions"]
+    }
+  ]
+}

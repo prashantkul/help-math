@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, BarChart3, LogOut, Copy, Check, FolderOpen } from 'lucide-react';
+import { Plus, Users, BookOpen, BarChart3, LogOut, Copy, Check, FolderOpen, Trash2 } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, Modal } from '../../components/common';
@@ -14,8 +14,11 @@ export default function TeacherDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newClassName, setNewClassName] = useState('');
+  const [newClassGrade, setNewClassGrade] = useState(3);
   const [isCreating, setIsCreating] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [classToDelete, setClassToDelete] = useState<Class | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !teacher) {
@@ -42,11 +45,12 @@ export default function TeacherDashboard() {
     if (!newClassName.trim()) return;
 
     setIsCreating(true);
-    const result = await apiClient.createClass(newClassName.trim());
+    const result = await apiClient.createClass(newClassName.trim(), undefined, undefined, newClassGrade);
     if (result.data) {
       setClasses([result.data, ...classes]);
       setShowCreateModal(false);
       setNewClassName('');
+      setNewClassGrade(3);
     }
     setIsCreating(false);
   };
@@ -55,6 +59,18 @@ export default function TeacherDashboard() {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const handleDeleteClass = async () => {
+    if (!classToDelete) return;
+
+    setIsDeleting(true);
+    const result = await apiClient.deleteClass(classToDelete.id);
+    if (result.data !== undefined || !result.error) {
+      setClasses(classes.filter(c => c.id !== classToDelete.id));
+      setClassToDelete(null);
+    }
+    setIsDeleting(false);
   };
 
   const handleLogout = () => {
@@ -153,7 +169,12 @@ export default function TeacherDashboard() {
                   <div className={`bg-gradient-to-r ${colors.bg} p-4`}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-lg font-bold text-white">{cls.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-white">{cls.name}</h3>
+                          <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full text-white">
+                            Grade {cls.grade}
+                          </span>
+                        </div>
                         <button
                           onClick={() => handleCopyCode(cls.join_code)}
                           className="flex items-center gap-1 text-sm text-white/80 hover:text-white mt-1 transition-colors"
@@ -168,8 +189,17 @@ export default function TeacherDashboard() {
                           )}
                         </button>
                       </div>
-                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                        <span className="text-xl">📖</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setClassToDelete(cls)}
+                          className="w-8 h-8 bg-white/10 hover:bg-red-500/80 rounded-lg flex items-center justify-center transition-colors"
+                          title="Delete class"
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                          <span className="text-xl">📖</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -236,6 +266,20 @@ export default function TeacherDashboard() {
               autoFocus
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Grade Level
+            </label>
+            <select
+              value={newClassGrade}
+              onChange={(e) => setNewClassGrade(parseInt(e.target.value))}
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:outline-none"
+            >
+              <option value={3}>Grade 3</option>
+              <option value={4}>Grade 4</option>
+              <option value={5}>Grade 5</option>
+            </select>
+          </div>
           <div className="flex gap-3">
             <Button
               variant="outline"
@@ -252,6 +296,45 @@ export default function TeacherDashboard() {
               disabled={!newClassName.trim() || isCreating}
             >
               Create Class
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Class Confirmation Modal */}
+      <Modal
+        isOpen={!!classToDelete}
+        onClose={() => setClassToDelete(null)}
+        title="Delete Class"
+      >
+        <div className="space-y-4">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8 text-red-500" />
+            </div>
+            <p className="text-gray-700">
+              Are you sure you want to delete <strong>{classToDelete?.name}</strong>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This class will be archived and can be recovered later if needed.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setClassToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1 !bg-red-500 hover:!bg-red-600"
+              onClick={handleDeleteClass}
+              isLoading={isDeleting}
+              disabled={isDeleting}
+            >
+              Delete Class
             </Button>
           </div>
         </div>

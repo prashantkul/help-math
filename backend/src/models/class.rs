@@ -11,6 +11,8 @@ pub struct Class {
     pub settings: String, // JSON stored as text
     pub purpose: Option<String>,
     pub description: Option<String>,
+    pub grade: Option<i32>,
+    pub deleted_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -58,6 +60,7 @@ pub struct CreateClass {
     pub name: String,
     pub purpose: Option<String>,
     pub description: Option<String>,
+    pub grade: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,6 +72,7 @@ pub struct UpdateClassSettings {
     pub name: Option<String>,
     pub purpose: Option<String>,
     pub description: Option<String>,
+    pub grade: Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -80,6 +84,7 @@ pub struct ClassResponse {
     pub settings: ClassSettings,
     pub purpose: Option<String>,
     pub description: Option<String>,
+    pub grade: i32,
     pub created_at: String,
 }
 
@@ -99,6 +104,7 @@ impl From<Class> for ClassResponse {
             settings: class.get_settings(),
             purpose: class.purpose.clone(),
             description: class.description.clone(),
+            grade: class.grade.unwrap_or(3),
             created_at: class.created_at.to_rfc3339(),
         }
     }

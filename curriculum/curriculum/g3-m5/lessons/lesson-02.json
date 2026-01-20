@@ -1,0 +1,59 @@
+{
+  "lesson_number": 2,
+  "topic": "A",
+  "title": "Folding Fraction Strips",
+  "objective": "Specify and partition a whole into equal parts, identifying and counting unit fractions by folding fraction strips.",
+  "standards": ["3.G.2", "3.NF.1"],
+  "problems": [
+    {
+      "id": "L2-P1",
+      "number": "1",
+      "text": "Circle the strips that are folded to make equal parts.",
+      "type": "identify_equal_parts",
+      "visual_model": "strip",
+      "skills": ["equal_parts_recognition"]
+    },
+    {
+      "id": "L2-P2",
+      "number": "2",
+      "text": "Fill in the blanks: There are ___ equal parts in all. ___ are shaded.",
+      "type": "identify_fraction",
+      "visual_model": "strip",
+      "sub_problems": [
+        {"part": "a"},
+        {"part": "b"},
+        {"part": "c"},
+        {"part": "d"}
+      ],
+      "skills": ["counting_parts", "identify_fraction"]
+    },
+    {
+      "id": "L2-P3",
+      "number": "3",
+      "text": "Noah, Pedro, and Sharon share a whole candy bar fairly. Which of your fraction strips shows how they each get an equal part? Draw the candy bar below. Then, label Sharon's fraction of the candy bar.",
+      "type": "fraction_word_problem",
+      "visual_model": "strip",
+      "context": {"num_people": 3, "item": "candy bar"},
+      "answer": {"fraction": "1/3", "unit_form": "1 third"},
+      "skills": ["fair_sharing", "unit_fractions"]
+    },
+    {
+      "id": "L2-P4a",
+      "number": "4a",
+      "text": "To make a garage for his toy truck, Zeno bends a rectangular piece of cardboard in half. He then bends each half in half again. What fraction of the original cardboard is each part?",
+      "type": "fraction_word_problem",
+      "visual_model": "strip",
+      "answer": {"fraction": "1/4", "unit_form": "1 fourth"},
+      "skills": ["repeated_halving", "unit_fractions"]
+    },
+    {
+      "id": "L2-P4b",
+      "number": "4b",
+      "text": "Zeno bends a different piece of cardboard in thirds. He then bends each third in half again. Which of your fraction strips best matches this story?",
+      "type": "fraction_word_problem",
+      "visual_model": "strip",
+      "answer": {"fraction": "1/6", "unit_form": "1 sixth"},
+      "skills": ["composed_partitioning", "unit_fractions"]
+    }
+  ]
+}

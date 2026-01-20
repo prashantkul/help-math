@@ -1,0 +1,44 @@
+{
+  "lesson_number": 8,
+  "topic": "B",
+  "title": "Number Bonds with Fractions",
+  "objective": "Represent parts of one whole as fractions with number bonds.",
+  "standards": ["3.NF.1"],
+  "problems": [
+    {
+      "id": "L8-P1-4",
+      "number": "1-4",
+      "text": "Show a number bond representing what is shaded and unshaded in each of the figures. Draw a different visual model that would be represented by the same number bond.",
+      "type": "number_bond",
+      "visual_model": "mixed",
+      "skills": ["number_bond", "equivalent_representations"]
+    },
+    {
+      "id": "L8-P5",
+      "number": "5",
+      "text": "Draw a number bond with 2 parts showing the shaded and unshaded fractions of each figure. Decompose both parts of the number bond into unit fractions.",
+      "type": "number_bond",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {"part": "a"},
+        {"part": "b"},
+        {"part": "c"},
+        {"part": "d"}
+      ],
+      "skills": ["number_bond", "decomposition", "unit_fractions"]
+    },
+    {
+      "id": "L8-P6",
+      "number": "6",
+      "text": "The chef put 1/4 of the ground beef on the grill to make one hamburger and put the rest in the refrigerator. Draw a 2-part number bond showing the fraction of the ground beef on the grill and the fraction in the refrigerator. Draw a visual model of all the ground beef. Shade what is in the refrigerator.",
+      "type": "fraction_word_problem",
+      "visual_model": "rectangle",
+      "sub_problems": [
+        {"part": "a", "question": "What fraction of the ground beef was in the refrigerator?", "answer": "3/4"},
+        {"part": "b", "question": "How many more hamburgers can the chef make if he makes them all the same size as the first one?", "answer": 3},
+        {"part": "c", "question": "Show the refrigerated ground beef broken into unit fractions on your number bond above."}
+      ],
+      "skills": ["word_problem", "number_bond", "unit_fractions"]
+    }
+  ]
+}

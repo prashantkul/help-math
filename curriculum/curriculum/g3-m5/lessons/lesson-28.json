@@ -1,0 +1,139 @@
+{
+  "lesson_number": 28,
+  "topic": "F",
+  "title": "Comparing Fractions with Same Numerator",
+  "objective": "Compare fractions with the same numerator pictorially.",
+  "standards": ["3.NF.3d"],
+  "key_concept": "When fractions have the same numerator, the one with the SMALLER denominator is LARGER (bigger pieces).",
+  "problems": [
+    {
+      "id": "L28-P1",
+      "number": "1",
+      "text": "Shade the models to compare the fractions. Circle the larger fraction.",
+      "type": "compare",
+      "visual_model": "rectangle",
+      "fraction_a": {"numerator": 2, "denominator": 5, "display": "2 fifths"},
+      "fraction_b": {"numerator": 2, "denominator": 3, "display": "2 thirds"},
+      "answer": {
+        "larger": "2/3",
+        "reason": "Thirds are bigger pieces than fifths"
+      },
+      "skills": ["comparing_fractions", "same_numerator", "visual_comparison"]
+    },
+    {
+      "id": "L28-P2",
+      "number": "2",
+      "text": "Shade the models to compare the fractions. Circle the larger fraction.",
+      "type": "compare",
+      "visual_model": "rectangle",
+      "fraction_a": {"numerator": 2, "denominator": 10, "display": "2 tenths"},
+      "fraction_b": {"numerator": 2, "denominator": 8, "display": "2 eighths"},
+      "answer": {
+        "larger": "2/8",
+        "reason": "Eighths are bigger pieces than tenths"
+      },
+      "skills": ["comparing_fractions", "same_numerator"]
+    },
+    {
+      "id": "L28-P3",
+      "number": "3",
+      "text": "Shade the models to compare the fractions. Circle the larger fraction.",
+      "type": "compare",
+      "visual_model": "rectangle",
+      "fraction_a": {"numerator": 3, "denominator": 4, "display": "3 fourths"},
+      "fraction_b": {"numerator": 3, "denominator": 8, "display": "3 eighths"},
+      "answer": {
+        "larger": "3/4",
+        "reason": "Fourths are bigger pieces than eighths"
+      },
+      "skills": ["comparing_fractions", "same_numerator"]
+    },
+    {
+      "id": "L28-P4",
+      "number": "4",
+      "text": "Shade the models to compare the fractions. Circle the larger fraction.",
+      "type": "compare",
+      "visual_model": "rectangle",
+      "fraction_a": {"numerator": 4, "denominator": 8, "display": "4 eighths"},
+      "fraction_b": {"numerator": 4, "denominator": 6, "display": "4 sixths"},
+      "answer": {
+        "larger": "4/6",
+        "reason": "Sixths are bigger pieces than eighths"
+      },
+      "skills": ["comparing_fractions", "same_numerator"]
+    },
+    {
+      "id": "L28-P5",
+      "number": "5",
+      "text": "Shade the models to compare the fractions. Circle the larger fraction.",
+      "type": "compare",
+      "visual_model": "rectangle",
+      "fraction_a": {"numerator": 3, "denominator": 3, "display": "3 thirds"},
+      "fraction_b": {"numerator": 3, "denominator": 6, "display": "3 sixths"},
+      "answer": {
+        "larger": "3/3",
+        "reason": "3/3 = 1 whole, which is bigger than 3/6 (half)"
+      },
+      "special_note": "3/3 equals 1 whole",
+      "skills": ["comparing_fractions", "same_numerator", "whole_recognition"]
+    },
+    {
+      "id": "L28-P6",
+      "number": "6",
+      "text": "After softball, Leslie and Kelly each buy a half-liter bottle of water. Leslie drinks 3 fourths of her water. Kelly drinks 3 fifths of her water. Who drinks the least amount of water? Draw a picture to support your answer.",
+      "type": "compare",
+      "visual_model": "strip",
+      "context": {
+        "real_world": "drinking water",
+        "people": ["Leslie", "Kelly"]
+      },
+      "fraction_a": {"person": "Leslie", "fraction": "3/4", "display": "3 fourths"},
+      "fraction_b": {"person": "Kelly", "fraction": "3/5", "display": "3 fifths"},
+      "answer": {
+        "least": "Kelly",
+        "reason": "3/5 < 3/4 because fifths are smaller pieces than fourths"
+      },
+      "skills": ["comparing_fractions", "word_problem", "same_numerator"]
+    },
+    {
+      "id": "L28-P7",
+      "number": "7",
+      "text": "Becky and Malory get matching piggy banks. Becky fills 2/3 of her piggy bank with pennies. Malory fills 2/4 of her piggy bank with pennies. Whose piggy bank has more pennies? Draw a picture to support your answer.",
+      "type": "compare",
+      "visual_model": "rectangle",
+      "context": {
+        "real_world": "filling piggy banks",
+        "people": ["Becky", "Malory"]
+      },
+      "fraction_a": {"person": "Becky", "fraction": "2/3", "display": "2 thirds"},
+      "fraction_b": {"person": "Malory", "fraction": "2/4", "display": "2 fourths"},
+      "answer": {
+        "more": "Becky",
+        "reason": "2/3 > 2/4 because thirds are bigger pieces than fourths"
+      },
+      "skills": ["comparing_fractions", "word_problem", "same_numerator"]
+    },
+    {
+      "id": "L28-P8",
+      "number": "8",
+      "text": "Heidi lines up her dolls in order from shortest to tallest. Doll A is 2/4 foot tall, Doll B is 2/6 foot tall, and Doll C is 2/3 foot tall. Compare the heights of the dolls to show how Heidi puts them in order. Draw a picture to support your answer.",
+      "type": "order",
+      "visual_model": "strip",
+      "context": {
+        "real_world": "ordering dolls by height",
+        "unit": "feet"
+      },
+      "fractions_to_order": [
+        {"doll": "A", "fraction": "2/4"},
+        {"doll": "B", "fraction": "2/6"},
+        {"doll": "C", "fraction": "2/3"}
+      ],
+      "answer": {
+        "order_shortest_to_tallest": ["B", "A", "C"],
+        "fractions_in_order": ["2/6", "2/4", "2/3"],
+        "reason": "Same numerator (2), so smaller denominator = larger fraction"
+      },
+      "skills": ["ordering_fractions", "word_problem", "same_numerator"]
+    }
+  ]
+}

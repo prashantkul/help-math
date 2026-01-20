@@ -1,0 +1,100 @@
+{
+  "terms": [
+    {
+      "term": "the whole",
+      "definition": "all of it",
+      "student_definition": "The whole thing we start with",
+      "emoji": "⭕",
+      "example": "The whole pizza before we cut it"
+    },
+    {
+      "term": "equal parts",
+      "definition": "same-size pieces",
+      "student_definition": "Pieces that are the same size",
+      "emoji": "⚖️",
+      "example": "A pizza cut into 4 equal slices"
+    },
+    {
+      "term": "partition",
+      "definition": "cut into equal pieces",
+      "student_definition": "To split something into equal parts",
+      "emoji": "✂️",
+      "example": "Partition the rectangle into thirds"
+    },
+    {
+      "term": "unit fraction",
+      "definition": "one piece of a whole",
+      "student_definition": "A fraction with 1 on top (like 1/2, 1/3, 1/4)",
+      "emoji": "1️⃣",
+      "example": "1 fourth, 1 third, 1 half"
+    },
+    {
+      "term": "numerator",
+      "definition": "top number",
+      "student_definition": "The top number - tells how many pieces we have",
+      "emoji": "👆",
+      "example": "In 3/4, the 3 is the numerator"
+    },
+    {
+      "term": "denominator",
+      "definition": "bottom number",
+      "student_definition": "The bottom number - tells how many equal pieces in the whole",
+      "emoji": "👇",
+      "example": "In 3/4, the 4 is the denominator"
+    },
+    {
+      "term": "half",
+      "definition": "1 of 2 equal parts",
+      "student_definition": "One piece when you cut into 2 equal parts",
+      "emoji": "½",
+      "unit_form": "1 half",
+      "fraction_form": "1/2"
+    },
+    {
+      "term": "third",
+      "definition": "1 of 3 equal parts",
+      "student_definition": "One piece when you cut into 3 equal parts",
+      "emoji": "⅓",
+      "unit_form": "1 third",
+      "fraction_form": "1/3"
+    },
+    {
+      "term": "fourth",
+      "definition": "1 of 4 equal parts",
+      "student_definition": "One piece when you cut into 4 equal parts",
+      "emoji": "¼",
+      "unit_form": "1 fourth",
+      "fraction_form": "1/4"
+    },
+    {
+      "term": "sixth",
+      "definition": "1 of 6 equal parts",
+      "student_definition": "One piece when you cut into 6 equal parts",
+      "emoji": "⅙",
+      "unit_form": "1 sixth",
+      "fraction_form": "1/6"
+    },
+    {
+      "term": "eighth",
+      "definition": "1 of 8 equal parts",
+      "student_definition": "One piece when you cut into 8 equal parts",
+      "emoji": "⅛",
+      "unit_form": "1 eighth",
+      "fraction_form": "1/8"
+    },
+    {
+      "term": "equivalent fractions",
+      "definition": "same amount, different name",
+      "student_definition": "Fractions that show the same amount",
+      "emoji": "🟰",
+      "example": "1/2 = 2/4 = 3/6"
+    },
+    {
+      "term": "number line",
+      "definition": "a line showing numbers in order",
+      "student_definition": "A line with marks to show where numbers go",
+      "emoji": "📏",
+      "example": "0 -------- 1/2 -------- 1"
+    }
+  ]
+}

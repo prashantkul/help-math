@@ -1,0 +1,38 @@
+{
+  "lesson_number": 11,
+  "topic": "C",
+  "title": "Comparing Unit Fractions with Different Models",
+  "objective": "Compare unit fractions with different-sized models representing the whole.",
+  "standards": ["3.NF.3d"],
+  "problems": [
+    {
+      "id": "L11-P1-7",
+      "number": "1-7",
+      "text": "Label the unit fraction. In each blank, draw and label the same whole with a shaded unit fraction that makes the sentence true. There is more than 1 correct way to make the sentence true.",
+      "type": "compare",
+      "visual_model": "mixed",
+      "instructions": [
+        {"problem": 1, "comparison": "is greater than"},
+        {"problem": 2, "comparison": "is less than"},
+        {"problem": 3, "comparison": "is greater than"},
+        {"problem": 4, "comparison": "is less than"},
+        {"problem": 5, "comparison": "is greater than"},
+        {"problem": 6, "comparison": "is less than"},
+        {"problem": 7, "comparison": "is greater than"}
+      ],
+      "skills": ["comparing_unit_fractions", "drawing_models"]
+    },
+    {
+      "id": "L11-P8",
+      "number": "8",
+      "text": "Fill in the blank with a fraction to make the statement true, and draw a matching model.",
+      "type": "compare",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {"instruction": "1/4 is less than __"},
+        {"instruction": "1/2 is greater than __"}
+      ],
+      "skills": ["comparing_unit_fractions", "open_ended"]
+    }
+  ]
+}

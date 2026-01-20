@@ -1,0 +1,45 @@
+{
+  "lesson_number": 19,
+  "topic": "D",
+  "title": "Distance and Position on the Number Line",
+  "objective": "Understand distance and position on the number line as strategies for comparing fractions.",
+  "standards": ["3.NF.3d", "3.NF.2b"],
+  "problems": [
+    {
+      "id": "L19-P1",
+      "number": "1",
+      "text": "Divide each number line into the given fractional unit. Then, place the fractions. Write each whole as a fraction.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {"part": "a", "fractional_unit": "halves", "fractions": ["3/2", "5/2", "4/2"], "range": "0-3"},
+        {"part": "b", "fractional_unit": "fourths", "fractions": ["9/4", "11/4", "6/4"], "range": "0-3"},
+        {"part": "c", "fractional_unit": "eighths", "fractions": ["24/8", "19/8", "16/8"], "range": "0-3"}
+      ],
+      "skills": ["number_line", "partitioning", "improper_fractions"]
+    },
+    {
+      "id": "L19-P2",
+      "number": "2",
+      "text": "Use the number lines above to compare the following fractions using >, <, or =.",
+      "type": "compare",
+      "visual_model": "number_line",
+      "comparisons": [
+        {"fraction_a": "6/4", "fraction_b": "9/4"},
+        {"fraction_a": "3/2", "fraction_b": "5/2"},
+        {"fraction_a": "19/8", "fraction_b": "16/8"},
+        {"fraction_a": "16/8", "fraction_b": "3/2"},
+        {"fraction_a": "9/4", "fraction_b": "19/8"},
+        {"fraction_a": "4/2", "fraction_b": "16/8"}
+      ],
+      "skills": ["comparing_fractions", "number_line"]
+    },
+    {
+      "id": "L19-P3",
+      "number": "3",
+      "text": "Choose a greater than comparison you made in Problem 2. Use pictures, numbers, and words to explain how you made that comparison.",
+      "type": "reasoning",
+      "skills": ["explanation", "comparing_fractions"]
+    }
+  ]
+}

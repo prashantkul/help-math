@@ -1,0 +1,52 @@
+{
+  "lesson_number": 21,
+  "topic": "E",
+  "title": "Equivalent Fractions on the Number Line",
+  "objective": "Recognize and show that equivalent fractions refer to the same point on the number line.",
+  "standards": ["3.NF.3a", "3.NF.3b"],
+  "problems": [
+    {
+      "id": "L21-P1",
+      "number": "1",
+      "text": "Use the fractional units on the left to count up on the number line. Label the missing fractions on the blanks.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {"row": "halves", "range": "0-2"},
+        {"row": "fourths", "range": "0-2"},
+        {"row": "halves", "range": "0-2"},
+        {"row": "sixths", "range": "0-2"}
+      ],
+      "skills": ["number_line", "equivalent_fractions"]
+    },
+    {
+      "id": "L21-P2",
+      "number": "2",
+      "text": "Use the number lines above to: Color fractions equal to 1 half blue. Color fractions equal to 1 yellow. Color fractions equal to 3 halves green. Color fractions equal to 2 red.",
+      "type": "equivalent",
+      "visual_model": "number_line",
+      "skills": ["equivalent_fractions", "whole_number_equivalents"]
+    },
+    {
+      "id": "L21-P3",
+      "number": "3",
+      "text": "Use the number lines above to make the number sentences true.",
+      "type": "equivalent",
+      "equations": [
+        "2/4 = __/6",
+        "6/6 = __/2 = __",
+        "3/2 = __/6 = __"
+      ],
+      "skills": ["equivalent_fractions"]
+    },
+    {
+      "id": "L21-P4",
+      "number": "4",
+      "text": "Jack and Jill use rain gauges the same size and shape to measure rain on the top of a hill. Jack's gauge is marked in fourths of an inch. Jill's gauge measures in eighths of an inch. On Thursday, Jack's gauge measured 2/4 inches of rain. They both had the same amount of water, so what was the reading on Jill's gauge?",
+      "type": "equivalent",
+      "visual_model": "strip",
+      "answer": "4/8",
+      "skills": ["equivalent_fractions", "word_problem"]
+    }
+  ]
+}

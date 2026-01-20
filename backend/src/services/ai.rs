@@ -47,13 +47,22 @@ impl AIService {
         problem_text: &str,
         ell_level: i32,
     ) -> Result<ScaffoldingAIResponse> {
+        self.generate_scaffold_with_prompt(problem_text, ell_level, None).await
+    }
+
+    pub async fn generate_scaffold_with_prompt(
+        &self,
+        problem_text: &str,
+        ell_level: i32,
+        custom_prompt: Option<&str>,
+    ) -> Result<ScaffoldingAIResponse> {
         // Check if API key is configured
         if self.api_key.is_empty() {
             return Err(anyhow!("ANTHROPIC_API_KEY is not configured"));
         }
         tracing::info!("Calling Claude API with key: {}...", &self.api_key[..20.min(self.api_key.len())]);
 
-        let system_prompt = self.get_system_prompt(ell_level);
+        let system_prompt = self.get_system_prompt_with_custom(ell_level, custom_prompt);
         let user_prompt = format!(
             "Please scaffold the following math word problem for a 3rd grade ELL student:\n\n{}",
             problem_text
@@ -134,6 +143,10 @@ impl AIService {
     }
 
     fn get_system_prompt(&self, ell_level: i32) -> String {
+        self.get_system_prompt_with_custom(ell_level, None)
+    }
+
+    fn get_system_prompt_with_custom(&self, ell_level: i32, custom_prompt: Option<&str>) -> String {
         let vocab_level = match ell_level {
             1 => "very basic vocabulary (Lexile 200-400)",
             2 => "simple vocabulary (Lexile 400-600)",
@@ -141,9 +154,13 @@ impl AIService {
             _ => "simple vocabulary (Lexile 400-600)",
         };
 
-        format!(r#"You are an expert elementary math educator specializing in helping English Language Learners (ELL) understand word problems. Your task is to decompose a 3rd grade math word problem into scaffolded steps.
+        let custom_instructions = custom_prompt
+            .map(|p| format!("\n\nADDITIONAL TEACHER INSTRUCTIONS:\n{}\n", p))
+            .unwrap_or_default();
 
-Target audience: 8-9 year old students who are good at math but struggle with reading comprehension. Use {}.
+        format!(r#"You are an expert elementary math educator specializing in helping English Language Learners (ELL) understand word problems. Your task is to decompose a 3rd grade math word problem into scaffolded steps.{custom_instructions}
+
+Target audience: 8-9 year old students who are good at math but struggle with reading comprehension. Use {vocab_level}.
 
 For each problem, generate a JSON response with this structure:
 
@@ -233,8 +250,10 @@ Rules:
 7. For multi-step problems, you may need more steps - break it down as much as needed
 8. Avoid: complex sentences, idioms, uncommon words, unnecessary details
 9. Always return valid JSON that can be parsed
+10. step_type should be a short descriptive label for the step (e.g., "find_objects", "identify_fractions", "partition_whole", "compare_fractions", "solve", etc.). Use snake_case format.
+11. answer_type MUST be one of: "multiple_choice", "number_input", "multi_select", "equation_builder" - this determines how students interact with the step
 
-Respond ONLY with the JSON object, no other text."#, vocab_level)
+Respond ONLY with the JSON object, no other text."#)
     }
 }
 

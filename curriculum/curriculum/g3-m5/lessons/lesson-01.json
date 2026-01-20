@@ -1,0 +1,130 @@
+{
+  "lesson_number": 1,
+  "topic": "A",
+  "title": "Partitioning with Concrete Models",
+  "objective": "Specify and partition a whole into equal parts, identifying and counting unit fractions using concrete models.",
+  "standards": ["3.G.2", "3.NF.1"],
+  "problems": [
+    {
+      "id": "L1-P1",
+      "number": "1",
+      "text": "A beaker is considered full when the liquid reaches the fill line shown near the top. Estimate the amount of water in the beaker by shading the drawing as indicated.",
+      "type": "shade_fraction",
+      "visual_model": "beaker",
+      "sub_problems": [
+        {
+          "part": "a",
+          "instruction": "Shade to show 1 half",
+          "target_fraction": "1/2",
+          "denominator": 2
+        },
+        {
+          "part": "b",
+          "instruction": "Shade to show 1 fourth",
+          "target_fraction": "1/4",
+          "denominator": 4
+        },
+        {
+          "part": "c",
+          "instruction": "Shade to show 1 third",
+          "target_fraction": "1/3",
+          "denominator": 3
+        }
+      ],
+      "skills": ["estimation", "partitioning", "unit_fractions"]
+    },
+    {
+      "id": "L1-P2",
+      "number": "2",
+      "text": "Juanita cut her string cheese into equal pieces as shown in the rectangles below. In the blanks below, name the fraction of the string cheese represented by the shaded part.",
+      "type": "identify_fraction",
+      "visual_model": "rectangle",
+      "skills": ["identify_fraction", "unit_fractions"],
+      "note": "Multiple rectangles with varying partitions and shading - student names each fraction"
+    },
+    {
+      "id": "L1-P3a",
+      "number": "3a",
+      "text": "Draw a small rectangle. Estimate to split it into 2 equal parts. How many lines did you draw to make 2 equal parts? What is the name of each fractional unit?",
+      "type": "partition",
+      "visual_model": "rectangle",
+      "target_parts": 2,
+      "answer": {
+        "lines": 1,
+        "fractional_unit": "halves"
+      },
+      "skills": ["partitioning", "naming_fractions"]
+    },
+    {
+      "id": "L1-P3b",
+      "number": "3b",
+      "text": "Draw another small rectangle. Estimate to split it into 3 equal parts. How many lines did you draw to make 3 equal parts? What is the name of each fractional unit?",
+      "type": "partition",
+      "visual_model": "rectangle",
+      "target_parts": 3,
+      "answer": {
+        "lines": 2,
+        "fractional_unit": "thirds"
+      },
+      "skills": ["partitioning", "naming_fractions"]
+    },
+    {
+      "id": "L1-P3c",
+      "number": "3c",
+      "text": "Draw another small rectangle. Estimate to split it into 4 equal parts. How many lines did you draw to make 4 equal parts? What is the name of each fractional unit?",
+      "type": "partition",
+      "visual_model": "rectangle",
+      "target_parts": 4,
+      "answer": {
+        "lines": 3,
+        "fractional_unit": "fourths"
+      },
+      "skills": ["partitioning", "naming_fractions"]
+    },
+    {
+      "id": "L1-P4",
+      "number": "4",
+      "text": "Each rectangle represents 1 sheet of paper. Estimate to show how you would cut the paper into fractional units as indicated below.",
+      "type": "partition",
+      "visual_model": "rectangle",
+      "sub_problems": [
+        {
+          "part": "a",
+          "instruction": "Cut into sevenths",
+          "target_parts": 7,
+          "answer_lines": 6
+        },
+        {
+          "part": "b",
+          "instruction": "Cut into ninths",
+          "target_parts": 9,
+          "answer_lines": 8
+        }
+      ],
+      "followup": {
+        "question": "What do you notice? How many lines do you think you would draw to make a rectangle with 20 equal parts?",
+        "answer": 19,
+        "pattern": "Number of lines = number of parts - 1"
+      },
+      "skills": ["partitioning", "pattern_recognition"]
+    },
+    {
+      "id": "L1-P5",
+      "number": "5",
+      "text": "Rochelle has a strip of wood 12 inches long. She cuts it into pieces that are each 6 inches in length. What fraction of the wood is one piece? Draw a picture to show the piece of wood and how Rochelle cut it.",
+      "type": "fraction_word_problem",
+      "visual_model": "strip",
+      "context": {
+        "total_length": 12,
+        "piece_length": 6,
+        "unit": "inches"
+      },
+      "answer": {
+        "fraction": "1/2",
+        "unit_form": "1 half",
+        "reasoning": "12 ÷ 6 = 2 pieces, so each piece is 1 of 2 equal parts"
+      },
+      "skills": ["word_problem", "division_connection", "unit_fractions"]
+    }
+  ]
+}

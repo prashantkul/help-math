@@ -1,0 +1,33 @@
+{
+  "lesson_number": 13,
+  "topic": "C",
+  "title": "Fractional Parts and the Whole",
+  "objective": "Identify a shaded fractional part in different ways depending on the designation of the whole.",
+  "standards": ["3.NF.1"],
+  "problems": [
+    {
+      "id": "L13-P1-5",
+      "number": "1-5",
+      "text": "The shape represents 1 whole. Write a unit fraction to describe the shaded part. Then, the shaded part represents 1 whole. Divide 1 whole to show the same unit fraction you wrote in Part (a).",
+      "type": "identify_fraction",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {"problem": 1, "part_a": "identify fraction when shape is whole", "part_b": "draw whole when shaded is whole"},
+        {"problem": 2, "part_a": "identify fraction when shape is whole", "part_b": "draw whole when shaded is whole"},
+        {"problem": 3, "part_a": "identify fraction when shape is whole", "part_b": "draw whole when shaded is whole"},
+        {"problem": 4, "part_a": "identify fraction when shape is whole", "part_b": "draw whole when shaded is whole"},
+        {"problem": 5, "part_a": "identify fraction when shape is whole", "part_b": "draw whole when shaded is whole"}
+      ],
+      "skills": ["identify_fraction", "specifying_whole", "flexibility"]
+    },
+    {
+      "id": "L13-P6",
+      "number": "6",
+      "text": "Use the diagram below to complete the following statements about Rope A, Rope B, and Rope C.",
+      "type": "reasoning",
+      "visual_model": "strip",
+      "context": "Three ropes of different lengths",
+      "skills": ["comparing", "reasoning", "specifying_whole"]
+    }
+  ]
+}

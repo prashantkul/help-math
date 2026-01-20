@@ -321,10 +321,10 @@ pub async fn generate_scaffold(
     Json(payload): Json<GenerateScaffoldRequest>,
 ) -> Result<Json<ScaffoldingAIResponse>, (StatusCode, Json<serde_json::Value>)> {
     #[derive(sqlx::FromRow)]
-    struct ProblemInfo { id: String, original_text: String }
+    struct ProblemInfo { id: String, original_text: String, lesson_id: Option<String> }
 
     let problem: Option<ProblemInfo> = sqlx::query_as(
-        "SELECT p.id, p.original_text FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = $1 AND c.teacher_id = $2"
+        "SELECT p.id, p.original_text, p.lesson_id FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = $1 AND c.teacher_id = $2"
     )
     .bind(&problem_id)
     .bind(&auth.teacher_id)
@@ -338,8 +338,22 @@ pub async fn generate_scaffold(
     let problem = problem.ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))))?;
     let ell_level = payload.ell_level.unwrap_or(2);
 
-    tracing::info!("Generating scaffold for problem: {}", problem_id);
-    let scaffold = match state.ai_service.generate_scaffold(&problem.original_text, ell_level).await {
+    // Fetch module's scaffold_prompt if problem belongs to a lesson
+    let scaffold_prompt: Option<String> = if let Some(lesson_id) = &problem.lesson_id {
+        sqlx::query_scalar(
+            "SELECT m.scaffold_prompt FROM modules m JOIN lessons l ON l.module_id = m.id WHERE l.id = $1"
+        )
+        .bind(lesson_id)
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+    } else {
+        None
+    };
+
+    tracing::info!("Generating scaffold for problem: {} (custom_prompt: {})", problem_id, scaffold_prompt.is_some());
+    let scaffold = match state.ai_service.generate_scaffold_with_prompt(&problem.original_text, ell_level, scaffold_prompt.as_deref()).await {
         Ok(scaffold) => {
             tracing::info!("AI scaffold generated successfully with {} steps", scaffold.steps.len());
             scaffold

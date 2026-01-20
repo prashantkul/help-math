@@ -1,0 +1,52 @@
+{
+  "lesson_number": 17,
+  "topic": "D",
+  "title": "Placing Various Fractions",
+  "objective": "Practice placing various fractions on the number line.",
+  "standards": ["3.NF.2a", "3.NF.2b"],
+  "problems": [
+    {
+      "id": "L17-P1",
+      "number": "1",
+      "text": "Locate and label the following fractions on the number line: 0/6, 6/6, 12/6, 3/6, 9/6",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "range": {"start": 0, "end": 3},
+      "denominator": 6,
+      "fractions_to_place": ["0/6", "6/6", "12/6", "3/6", "9/6"],
+      "skills": ["number_line", "sixths", "mixed_fractions"]
+    },
+    {
+      "id": "L17-P2",
+      "number": "2",
+      "text": "Locate and label the following fractions on the number line: 8/4, 6/4, 12/4, 16/4, 4/4",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "range": {"start": 1, "end": 4},
+      "denominator": 4,
+      "fractions_to_place": ["8/4", "6/4", "12/4", "16/4", "4/4"],
+      "skills": ["number_line", "fourths", "improper_fractions"]
+    },
+    {
+      "id": "L17-P3",
+      "number": "3",
+      "text": "Locate and label the following fractions on the number line: 18/3, 14/3, 9/3, 11/3, 6/3",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "range": {"start": 2, "end": 6},
+      "denominator": 3,
+      "fractions_to_place": ["18/3", "14/3", "9/3", "11/3", "6/3"],
+      "skills": ["number_line", "thirds", "improper_fractions"]
+    },
+    {
+      "id": "L17-P4",
+      "number": "4",
+      "text": "For a measurement project in math class, students measured the lengths of their pinky fingers. Alex's measured 2 inches long. Jeremiah's pinky finger was 7/4 inches long. Whose finger is longer? Draw a number line to help prove your answer.",
+      "type": "compare",
+      "visual_model": "number_line",
+      "fractions_to_compare": ["2", "7/4"],
+      "answer": "Alex (2 > 7/4)",
+      "skills": ["number_line", "comparing", "word_problem"]
+    }
+  ]
+}

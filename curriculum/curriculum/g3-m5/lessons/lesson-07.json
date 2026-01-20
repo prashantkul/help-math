@@ -1,0 +1,46 @@
+{
+  "lesson_number": 7,
+  "topic": "B",
+  "title": "Shaded and Non-Shaded Parts",
+  "objective": "Identify and represent shaded and non-shaded parts of one whole as fractions.",
+  "standards": ["3.NF.1"],
+  "problems": [
+    {
+      "id": "L7-P1-8",
+      "number": "1-8",
+      "text": "Whisper the fraction of the shape that is shaded. Then, match the shape to the amount that is not shaded.",
+      "type": "identify_fraction",
+      "visual_model": "mixed",
+      "matching_options": ["2 thirds", "6 sevenths", "4 fifths", "8 ninths", "1 half", "5 sixths", "7 eighths", "3 fourths"],
+      "skills": ["identify_fraction", "complement_fractions"]
+    },
+    {
+      "id": "L7-P9",
+      "number": "9",
+      "text": "Fill in the blanks.",
+      "type": "reasoning",
+      "sub_problems": [
+        {"part": "a", "question": "How many eighths are in 1 whole?", "answer": 8},
+        {"part": "b", "question": "How many ninths are in 1 whole?", "answer": 9},
+        {"part": "c", "question": "How many twelfths are in 1 whole?", "answer": 12}
+      ],
+      "skills": ["whole_as_fraction", "reasoning"]
+    },
+    {
+      "id": "L7-P10",
+      "number": "10",
+      "text": "Each strip represents 1 whole. Write a fraction to label the shaded and unshaded parts.",
+      "type": "identify_fraction",
+      "visual_model": "strip",
+      "skills": ["identify_fraction", "complement_fractions"]
+    },
+    {
+      "id": "L7-P11",
+      "number": "11",
+      "text": "Avanti read 1 sixth of her book. What fraction of the book has she not read yet?",
+      "type": "fraction_word_problem",
+      "answer": {"fraction": "5/6", "unit_form": "5 sixths"},
+      "skills": ["word_problem", "complement_fractions"]
+    }
+  ]
+}

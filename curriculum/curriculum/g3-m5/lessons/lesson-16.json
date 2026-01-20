@@ -1,0 +1,33 @@
+{
+  "lesson_number": 16,
+  "topic": "D",
+  "title": "Whole Number Fractions on the Number Line",
+  "objective": "Place whole number fractions and fractions between whole numbers on the number line.",
+  "standards": ["3.NF.2a", "3.NF.2b"],
+  "problems": [
+    {
+      "id": "L16-P1",
+      "number": "1",
+      "text": "Estimate to equally partition and label the fractions on the number line. Label the wholes as fractions, and box them.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "sub_problems": [
+        {"part": "a", "fractional_unit": "halves", "start": 0, "end": 2},
+        {"part": "b", "fractional_unit": "thirds", "start": 1, "end": 2},
+        {"part": "c", "fractional_unit": "halves", "start": 2, "end": 4},
+        {"part": "d", "fractional_unit": "fourths", "start": 3, "end": 5},
+        {"part": "e", "fractional_unit": "thirds", "start": 6, "end": 9}
+      ],
+      "skills": ["number_line", "whole_number_fractions", "partitioning"]
+    },
+    {
+      "id": "L16-P2",
+      "number": "2",
+      "text": "Partition each whole into fifths. Label each fraction. Count up as you go. Box the fractions that are located at the same points as whole numbers.",
+      "type": "number_line",
+      "visual_model": "number_line",
+      "denominator": 5,
+      "skills": ["number_line", "fifths", "whole_number_equivalents"]
+    }
+  ]
+}

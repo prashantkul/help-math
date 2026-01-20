@@ -1,0 +1,62 @@
+{
+  "lesson_number": 27,
+  "topic": "E",
+  "title": "Explaining Equivalence",
+  "objective": "Explain equivalence by manipulating units and reasoning about their size.",
+  "standards": ["3.NF.3a", "3.NF.3b"],
+  "problems": [
+    {
+      "id": "L27-P1",
+      "number": "1",
+      "text": "Use the pictures to model equivalent fractions. Fill in the blanks, and answer the questions.",
+      "type": "equivalent",
+      "visual_model": "mixed",
+      "sub_problems": [
+        {
+          "equation": "4/6 = __/3",
+          "question_a": "What happened to the size of the equal parts when there were fewer equal parts?",
+          "question_b": "What happened to the number of equal parts when the equal parts became larger?"
+        },
+        {
+          "equation": "1/2 = __/8",
+          "question_a": "What happened to the size of the equal parts when there were more equal parts?",
+          "question_b": "What happened to the number of equal parts when the equal parts became smaller?"
+        }
+      ],
+      "skills": ["equivalent_fractions", "reasoning"]
+    },
+    {
+      "id": "L27-P2",
+      "number": "2",
+      "text": "6 friends want to share 3 chocolate bars that are all the same size. When the bars are unwrapped, the friends notice that the first chocolate bar is cut into 2 equal parts, the second is cut into 4 equal parts, and the third is cut into 6 equal parts. How can the 6 friends share the chocolate bars equally without breaking any of the pieces?",
+      "type": "fraction_word_problem",
+      "visual_model": "rectangle",
+      "skills": ["fair_sharing", "equivalent_fractions", "reasoning"]
+    },
+    {
+      "id": "L27-P3",
+      "number": "3",
+      "text": "When the whole is the same, why does it take 6 copies of 1/8 to equal 3 copies of 1/4? Draw a model to support your answer.",
+      "type": "reasoning",
+      "visual_model": "strip",
+      "skills": ["equivalent_fractions", "explanation"]
+    },
+    {
+      "id": "L27-P4",
+      "number": "4",
+      "text": "When the whole is the same, how many sixths does it take to equal 1/3? Draw a model to support your answer.",
+      "type": "reasoning",
+      "visual_model": "strip",
+      "answer": "2 sixths",
+      "skills": ["equivalent_fractions", "explanation"]
+    },
+    {
+      "id": "L27-P5",
+      "number": "5",
+      "text": "You have a magic wand that doubles the number of equal parts but keeps the whole the same size. Use your magic wand. In the space below, draw to show what happens to a rectangle that is partitioned into fourths.",
+      "type": "reasoning",
+      "visual_model": "rectangle",
+      "skills": ["equivalent_fractions", "doubling_parts"]
+    }
+  ]
+}
