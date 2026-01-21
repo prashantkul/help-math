@@ -171,6 +171,14 @@ pub struct ScaffoldingAIRequest {
     pub ell_level: i32,
 }
 
+// Request for previewing scaffold generation with custom prompt
+#[derive(Debug, Deserialize)]
+pub struct PreviewScaffoldRequest {
+    pub problem_text: String,
+    pub scaffold_prompt: String,
+    pub ell_level: Option<i32>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScaffoldingAIResponse {
     pub simplified_problem: String,

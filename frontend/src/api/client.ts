@@ -280,6 +280,23 @@ class ApiClient {
     });
   }
 
+  // Scaffold Preview - test prompt with a problem before saving
+  async previewScaffold(
+    moduleId: string,
+    problemText: string,
+    scaffoldPrompt: string,
+    ellLevel: 1 | 2 | 3 = 2
+  ): Promise<ApiResponse<ScaffoldingResponse>> {
+    return this.request<ScaffoldingResponse>(`/modules/${moduleId}/scaffold-preview`, {
+      method: 'POST',
+      body: JSON.stringify({
+        problem_text: problemText,
+        scaffold_prompt: scaffoldPrompt,
+        ell_level: ellLevel,
+      }),
+    });
+  }
+
   // Lessons
   async getLessons(moduleId: string): Promise<ApiResponse<Lesson[]>> {
     return this.request<Lesson[]>(`/modules/${moduleId}/lessons`);

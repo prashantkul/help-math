@@ -58,8 +58,10 @@ export default function FindObjectsStep({ step, onSubmit, result, onTryAgain }: 
       {/* Options */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         {options.map((option) => {
-          const value = typeof option === 'string' ? option : option.value || option.label;
-          const label = typeof option === 'string' ? option : option.label || option.value;
+          // Handle string, number, or object options
+          const isPrimitive = typeof option === 'string' || typeof option === 'number';
+          const value = isPrimitive ? String(option) : String(option.value ?? option.label ?? '');
+          const label = isPrimitive ? String(option) : String(option.label ?? option.value ?? '');
           const isSelected = selected.includes(value);
 
           return (

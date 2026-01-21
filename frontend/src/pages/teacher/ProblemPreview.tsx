@@ -103,9 +103,15 @@ export default function ProblemPreview() {
       return String(correctAnswer).toLowerCase() === String(givenAnswer).toLowerCase();
     }
     if (answerType === 'multi_select') {
-      const correct = Array.isArray(correctAnswer) ? [...correctAnswer].sort() : [];
-      const given = Array.isArray(givenAnswer) ? [...givenAnswer].sort() : [];
-      return JSON.stringify(correct) === JSON.stringify(given);
+      // Convert both to Sets of strings for order-independent comparison
+      const toStringSet = (arr: unknown[]) => new Set(arr.map(v => String(v)));
+      const correctSet = Array.isArray(correctAnswer) ? toStringSet(correctAnswer) : new Set();
+      const givenSet = Array.isArray(givenAnswer) ? toStringSet(givenAnswer) : new Set();
+      if (correctSet.size !== givenSet.size) return false;
+      for (const val of correctSet) {
+        if (!givenSet.has(val)) return false;
+      }
+      return true;
     }
     if (answerType === 'equation_builder') {
       return JSON.stringify(correctAnswer) === JSON.stringify(givenAnswer);

@@ -62,11 +62,11 @@ export default function Modal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeStyles[size]} bg-white rounded-3xl shadow-2xl transform transition-all duration-300 scale-100 opacity-100`}
+        className={`relative w-full ${sizeStyles[size]} max-h-[90vh] bg-white rounded-3xl shadow-2xl transform transition-all duration-300 scale-100 opacity-100 flex flex-col`}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
             {title && (
               <h2 id="modal-title" className="text-xl font-bold text-gray-800">
                 {title}
@@ -85,7 +85,7 @@ export default function Modal({
         )}
 
         {/* Content */}
-        <div className="p-6">{children}</div>
+        <div className="p-6 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

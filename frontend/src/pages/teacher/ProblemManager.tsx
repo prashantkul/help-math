@@ -285,13 +285,13 @@ export default function ProblemManager() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate(-1)}
+              <Link
+                to={`/teacher/classes/${isLessonMode ? derivedClassId : classId}/curriculum`}
                 className="flex items-center gap-2 px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
+                Curriculum
+              </Link>
               <div>
                 <h1 className="text-xl font-bold text-white">
                   {isLessonMode ? lessonName : classData?.name} - Problems
@@ -403,7 +403,7 @@ export default function ProblemManager() {
           {/* Problem Detail Panel */}
           <div className="lg:col-span-1">
             {selectedProblem ? (
-              <Card padding="lg" className="sticky top-24">
+              <Card padding="lg" className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-800">Problem Details</h3>
                   <button

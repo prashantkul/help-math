@@ -10,7 +10,7 @@ use crate::{
     app_middleware::TeacherAuth,
     models::{
         CreateLesson, CreateModule, Lesson, LessonResponse, Module, ModuleResponse,
-        UpdateLesson, UpdateLessonSchedule, UpdateModule,
+        PreviewScaffoldRequest, UpdateLesson, UpdateLessonSchedule, UpdateModule,
     },
     AppState,
 };
@@ -653,4 +653,59 @@ pub async fn update_lesson_schedule(
     .unwrap_or(0) as i32;
 
     Ok(Json(LessonResponse::from_lesson_with_count(updated, count)))
+}
+
+// ============ Scaffold Preview ============
+
+/// Preview scaffold generation with a custom prompt (no DB writes)
+pub async fn preview_scaffold(
+    State(state): State<AppState>,
+    Extension(auth): Extension<TeacherAuth>,
+    Path(module_id): Path<String>,
+    Json(payload): Json<PreviewScaffoldRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    // Verify teacher has access to this module via class ownership
+    let module = sqlx::query_as::<_, Module>("SELECT * FROM modules WHERE id = $1")
+        .bind(&module_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Module not found".to_string()))?;
+
+    let has_access = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*) FROM classes
+        WHERE id = $1 AND (teacher_id = $2 OR id IN (
+            SELECT class_id FROM class_teachers WHERE teacher_id = $3
+        ))
+        "#,
+    )
+    .bind(&module.class_id)
+    .bind(&auth.teacher_id)
+    .bind(&auth.teacher_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if has_access == 0 {
+        return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
+    }
+
+    let ell_level = payload.ell_level.unwrap_or(2);
+
+    // Use the provided scaffold_prompt (or None if empty)
+    let custom_prompt = if payload.scaffold_prompt.trim().is_empty() {
+        None
+    } else {
+        Some(payload.scaffold_prompt.as_str())
+    };
+
+    // Call AI service to generate scaffold preview (no database writes)
+    let scaffold_response = state
+        .ai_service
+        .generate_scaffold_with_prompt(&payload.problem_text, ell_level, custom_prompt)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("AI generation failed: {}", e)))?;
+
+    Ok(Json(scaffold_response))
 }

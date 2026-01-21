@@ -5,7 +5,7 @@ import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { curriculumApi } from '../../api/curriculumApi';
 import { Button, Card, Loading, Modal } from '../../components/common';
-import type { Module, Class, Lesson } from '../../types';
+import type { Module, Class, Lesson, Problem, ScaffoldingResponse } from '../../types';
 import type { ModuleSummary, CurriculumModule } from '../../types/curriculum';
 
 export default function CurriculumManager() {
@@ -52,6 +52,17 @@ export default function CurriculumManager() {
   const [scaffoldPrompt, setScaffoldPrompt] = useState('');
   const [newScaffoldPrompt, setNewScaffoldPrompt] = useState('');
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
+
+  // Scaffold prompt test states
+  const [showTestSection, setShowTestSection] = useState(false);
+  const [testProblemSource, setTestProblemSource] = useState<'sample' | 'custom'>('custom');
+  const [customProblemText, setCustomProblemText] = useState('');
+  const [selectedSampleProblem, setSelectedSampleProblem] = useState('');
+  const [moduleProblems, setModuleProblems] = useState<Problem[]>([]);
+  const [loadingProblems, setLoadingProblems] = useState(false);
+  const [previewResult, setPreviewResult] = useState<ScaffoldingResponse | null>(null);
+  const [isTestingPrompt, setIsTestingPrompt] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !teacher) {
@@ -296,6 +307,72 @@ export default function CurriculumManager() {
       setShowScaffoldPromptModal(false);
       setSelectedModuleForPrompt(null);
     }
+  };
+
+  // Load problems for the module to use as test samples
+  const loadModuleProblems = async (module: Module) => {
+    if (!module.lessons || module.lessons.length === 0) {
+      setModuleProblems([]);
+      return;
+    }
+
+    setLoadingProblems(true);
+    const allProblems: Problem[] = [];
+
+    for (const lesson of module.lessons) {
+      const result = await apiClient.getLessonProblems(lesson.id);
+      if (result.data) {
+        allProblems.push(...result.data);
+      }
+    }
+
+    setModuleProblems(allProblems);
+    setLoadingProblems(false);
+  };
+
+  // Test the scaffold prompt with a problem
+  const handleTestPrompt = async () => {
+    if (!selectedModuleForPrompt) return;
+
+    const problemText = testProblemSource === 'custom'
+      ? customProblemText.trim()
+      : moduleProblems.find(p => p.id === selectedSampleProblem)?.original_text || '';
+
+    if (!problemText) {
+      setTestError('Please enter or select a problem to test with.');
+      return;
+    }
+
+    setIsTestingPrompt(true);
+    setTestError(null);
+    setPreviewResult(null);
+
+    const result = await apiClient.previewScaffold(
+      selectedModuleForPrompt.id,
+      problemText,
+      scaffoldPrompt,
+      2 // Default ELL level
+    );
+
+    setIsTestingPrompt(false);
+
+    if (result.error) {
+      setTestError(result.error);
+    } else if (result.data) {
+      setPreviewResult(result.data);
+    }
+  };
+
+  // Reset test states when closing modal
+  const resetTestStates = () => {
+    setShowTestSection(false);
+    setTestProblemSource('custom');
+    setCustomProblemText('');
+    setSelectedSampleProblem('');
+    setModuleProblems([]);
+    setPreviewResult(null);
+    setIsTestingPrompt(false);
+    setTestError(null);
   };
 
   const handleSaveSchedule = async () => {
@@ -943,6 +1020,7 @@ export default function CurriculumManager() {
           setShowScaffoldPromptModal(false);
           setSelectedModuleForPrompt(null);
           setScaffoldPrompt('');
+          resetTestStates();
         }}
         title="AI Scaffolding Settings"
         size="lg"
@@ -1013,6 +1091,162 @@ export default function CurriculumManager() {
                 </div>
               </div>
 
+              {/* Test Your Prompt Section */}
+              <div className="border-t pt-4">
+                <button
+                  onClick={() => {
+                    setShowTestSection(!showTestSection);
+                    if (!showTestSection && selectedModuleForPrompt) {
+                      loadModuleProblems(selectedModuleForPrompt);
+                    }
+                  }}
+                  className="flex items-center gap-2 text-sm font-medium text-purple-700 hover:text-purple-800"
+                >
+                  <Settings className="w-4 h-4" />
+                  {showTestSection ? 'Hide Test Section' : 'Test Your Prompt'}
+                  <ChevronRight className={`w-4 h-4 transition-transform ${showTestSection ? 'rotate-90' : ''}`} />
+                </button>
+
+                {showTestSection && (
+                  <div className="mt-4 space-y-4">
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                      <p className="text-sm text-blue-800 mb-3">
+                        Test your prompt with a real problem to see how the AI will generate scaffolding.
+                      </p>
+
+                      {/* Problem Source Toggle */}
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={() => setTestProblemSource('custom')}
+                          className={`flex-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                            testProblemSource === 'custom'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
+                          }`}
+                        >
+                          Enter Custom Text
+                        </button>
+                        <button
+                          onClick={() => setTestProblemSource('sample')}
+                          className={`flex-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                            testProblemSource === 'sample'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
+                          }`}
+                          disabled={moduleProblems.length === 0}
+                        >
+                          Select from Module
+                        </button>
+                      </div>
+
+                      {/* Custom Problem Input */}
+                      {testProblemSource === 'custom' && (
+                        <textarea
+                          value={customProblemText}
+                          onChange={(e) => setCustomProblemText(e.target.value)}
+                          placeholder="Enter a math word problem to test with..."
+                          className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none min-h-[80px] text-sm"
+                        />
+                      )}
+
+                      {/* Sample Problem Dropdown */}
+                      {testProblemSource === 'sample' && (
+                        <div>
+                          {loadingProblems ? (
+                            <p className="text-sm text-blue-600">Loading problems...</p>
+                          ) : moduleProblems.length === 0 ? (
+                            <p className="text-sm text-blue-600">No problems in this module yet. Enter custom text above.</p>
+                          ) : (
+                            <select
+                              value={selectedSampleProblem}
+                              onChange={(e) => setSelectedSampleProblem(e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none text-sm"
+                            >
+                              <option value="">-- Select a problem --</option>
+                              {moduleProblems.map((p, idx) => (
+                                <option key={p.id} value={p.id}>
+                                  {idx + 1}. {p.original_text.slice(0, 60)}{p.original_text.length > 60 ? '...' : ''}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      )}
+
+                      <Button
+                        variant="primary"
+                        className="w-full mt-3"
+                        onClick={handleTestPrompt}
+                        isLoading={isTestingPrompt}
+                        disabled={
+                          isTestingPrompt ||
+                          (testProblemSource === 'custom' && !customProblemText.trim()) ||
+                          (testProblemSource === 'sample' && !selectedSampleProblem)
+                        }
+                      >
+                        {isTestingPrompt ? 'Generating Preview...' : 'Test Prompt'}
+                      </Button>
+                    </div>
+
+                    {/* Error Display */}
+                    {testError && (
+                      <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                        <p className="text-sm text-red-800">{testError}</p>
+                      </div>
+                    )}
+
+                    {/* Preview Results */}
+                    {previewResult && (
+                      <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-2xl">{previewResult.scene_emoji}</span>
+                          <div>
+                            <p className="font-medium text-green-800">Preview Generated!</p>
+                            <p className="text-xs text-green-600">
+                              Difficulty: {previewResult.difficulty}/3 | Tags: {previewResult.skill_tags.join(', ')}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-3 mb-3 border border-green-100">
+                          <p className="text-sm font-medium text-gray-700 mb-1">Simplified Problem:</p>
+                          <p className="text-sm text-gray-600">{previewResult.simplified_problem}</p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-green-800">
+                            Generated Steps ({previewResult.steps.length}):
+                          </p>
+                          {previewResult.steps.map((step, idx) => (
+                            <div key={idx} className="bg-white rounded-lg p-3 border border-green-100">
+                              <div className="flex items-start gap-2">
+                                <span className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                  {idx + 1}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-green-600 mb-1">
+                                    {step.step_type} • {step.answer_type} • {step.points} pts
+                                  </p>
+                                  <p className="text-sm text-gray-800">{step.prompt_text}</p>
+                                  {step.hints && step.hints.length > 0 && (
+                                    <div className="mt-2 pl-3 border-l-2 border-green-200">
+                                      <p className="text-xs text-gray-500 mb-1">Hints:</p>
+                                      {step.hints.map((hint, hIdx) => (
+                                        <p key={hIdx} className="text-xs text-gray-600">• {hint}</p>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
@@ -1021,6 +1255,7 @@ export default function CurriculumManager() {
                     setShowScaffoldPromptModal(false);
                     setSelectedModuleForPrompt(null);
                     setScaffoldPrompt('');
+                    resetTestStates();
                   }}
                 >
                   Cancel

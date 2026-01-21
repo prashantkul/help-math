@@ -100,6 +100,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/classes/:id/coteachers/:coteacher_id", delete(routes::remove_co_teacher))
         .route("/classes/:id/modules", get(routes::list_modules).post(routes::create_module))
         .route("/modules/:id", get(routes::get_lesson).put(routes::update_module).delete(routes::delete_module))
+        .route("/modules/:id/scaffold-preview", post(routes::preview_scaffold))
         .route("/modules/:id/lessons", get(routes::list_lessons).post(routes::create_lesson))
         .route("/lessons/:id", get(routes::get_lesson).put(routes::update_lesson).delete(routes::delete_lesson))
         .route("/lessons/:id/schedule", put(routes::update_lesson_schedule))
