@@ -72,33 +72,33 @@ export default function CurriculumManager() {
 
   useEffect(() => {
     if (classId && teacher) {
+      const fetchData = async () => {
+        setIsLoading(true);
+
+        const [classesResult, modulesResult] = await Promise.all([
+          apiClient.getClasses(),
+          apiClient.getModules(classId),
+        ]);
+
+        if (classesResult.data) {
+          const cls = classesResult.data.find((c) => c.id === classId);
+          if (cls) setClassData(cls);
+        }
+
+        if (modulesResult.data) {
+          const modulesData = modulesResult.data;
+          setModules(modulesData);
+          // Expand first module by default
+          if (modulesData.length > 0) {
+            setExpandedModule((prev) => prev || modulesData[0].id);
+          }
+        }
+
+        setIsLoading(false);
+      };
       fetchData();
     }
   }, [classId, teacher]);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-
-    const [classesResult, modulesResult] = await Promise.all([
-      apiClient.getClasses(),
-      apiClient.getModules(classId!),
-    ]);
-
-    if (classesResult.data) {
-      const cls = classesResult.data.find((c) => c.id === classId);
-      if (cls) setClassData(cls);
-    }
-
-    if (modulesResult.data) {
-      setModules(modulesResult.data);
-      // Expand first module by default
-      if (modulesResult.data.length > 0 && !expandedModule) {
-        setExpandedModule(modulesResult.data[0].id);
-      }
-    }
-
-    setIsLoading(false);
-  };
 
   const loadCurriculumModules = async () => {
     if (!classData) return;

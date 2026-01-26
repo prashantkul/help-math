@@ -37,15 +37,17 @@ function tokenize(text: string): Token[] {
   const tokens: Token[] = [];
   let currentIndex = 0;
 
-  // Regex to match numbers, words, punctuation, or spaces
-  const regex = /(\d+(?:,\d{3})*(?:\.\d+)?)|([a-zA-Z]+(?:'[a-zA-Z]+)?)|([^\s\w])|(\s+)/g;
+  // Regex to match fractions (1/6), numbers, words, punctuation, or spaces
+  // Order matters: fractions must come before plain numbers
+  const regex = /(\d+\/\d+)|(\d+(?:,\d{3})*(?:\.\d+)?)|([a-zA-Z]+(?:'[a-zA-Z]+)?)|([^\s\w])|(\s+)/g;
   let match;
 
   while ((match = regex.exec(text)) !== null) {
-    const [fullMatch, number, word, punct, space] = match;
+    const [fullMatch, fraction, number, word, punct] = match;
 
     let type: Token['type'];
-    if (number) type = 'number';
+    if (fraction) type = 'number';  // Treat fractions as numbers for circling
+    else if (number) type = 'number';
     else if (word) type = 'word';
     else if (punct) type = 'punctuation';
     else type = 'space';

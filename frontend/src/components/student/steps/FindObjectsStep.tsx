@@ -48,13 +48,6 @@ export default function FindObjectsStep({ step, onSubmit, result, onTryAgain }: 
         />
       </div>
 
-      {/* Simplified text if available */}
-      {step.simplified_text && (
-        <p className="text-lg text-gray-600 mb-6 bg-white rounded-xl p-4">
-          {step.simplified_text}
-        </p>
-      )}
-
       {/* Options */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         {options.map((option) => {

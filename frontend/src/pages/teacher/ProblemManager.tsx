@@ -61,55 +61,54 @@ export default function ProblemManager() {
 
   useEffect(() => {
     if ((classId || lessonId) && teacher) {
-      fetchData();
-    }
-  }, [classId, lessonId, teacher]);
+      const fetchData = async () => {
+        setIsLoading(true);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+        if (isLessonMode && lessonId) {
+          // Fetch lesson info and problems for the lesson
+          const [lessonResult, problemsResult] = await Promise.all([
+            apiClient.getLesson(lessonId),
+            apiClient.getLessonProblems(lessonId),
+          ]);
 
-    if (isLessonMode && lessonId) {
-      // Fetch lesson info and problems for the lesson
-      const [lessonResult, problemsResult] = await Promise.all([
-        apiClient.getLesson(lessonId),
-        apiClient.getLessonProblems(lessonId),
-      ]);
+          if (lessonResult.data) {
+            setLessonName(lessonResult.data.name);
+            if (lessonResult.data.class_id) {
+              setDerivedClassId(lessonResult.data.class_id);
+              // Also fetch class data to get ELL settings
+              const classesResult = await apiClient.getClasses();
+              if (classesResult.data) {
+                const cls = classesResult.data.find((c) => c.id === lessonResult.data!.class_id);
+                if (cls) setClassData(cls);
+              }
+            }
+          }
 
-      if (lessonResult.data) {
-        setLessonName(lessonResult.data.name);
-        if (lessonResult.data.class_id) {
-          setDerivedClassId(lessonResult.data.class_id);
-          // Also fetch class data to get ELL settings
-          const classesResult = await apiClient.getClasses();
+          if (problemsResult.data) {
+            setProblems(problemsResult.data);
+          }
+        } else if (classId) {
+          // Fetch class info and problems for the class
+          const [classesResult, problemsResult] = await Promise.all([
+            apiClient.getClasses(),
+            apiClient.getProblems(classId),
+          ]);
+
           if (classesResult.data) {
-            const cls = classesResult.data.find((c) => c.id === lessonResult.data!.class_id);
+            const cls = classesResult.data.find((c) => c.id === classId);
             if (cls) setClassData(cls);
           }
+
+          if (problemsResult.data) {
+            setProblems(problemsResult.data);
+          }
         }
-      }
 
-      if (problemsResult.data) {
-        setProblems(problemsResult.data);
-      }
-    } else if (classId) {
-      // Fetch class info and problems for the class
-      const [classesResult, problemsResult] = await Promise.all([
-        apiClient.getClasses(),
-        apiClient.getProblems(classId),
-      ]);
-
-      if (classesResult.data) {
-        const cls = classesResult.data.find((c) => c.id === classId);
-        if (cls) setClassData(cls);
-      }
-
-      if (problemsResult.data) {
-        setProblems(problemsResult.data);
-      }
+        setIsLoading(false);
+      };
+      fetchData();
     }
-
-    setIsLoading(false);
-  };
+  }, [classId, lessonId, teacher, isLessonMode]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -365,7 +364,11 @@ export default function ProblemManager() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xl">{problem.scene_emoji || '📝'}</span>
+                        {problem.image_url ? (
+                          <img src={problem.image_url} alt="" className="w-8 h-8 rounded object-cover" />
+                        ) : (
+                          <span className="text-xl">{problem.scene_emoji || '📝'}</span>
+                        )}
                         {(() => {
                           const badge = getStateBadge(problem.state || 'draft');
                           return (
@@ -415,6 +418,18 @@ export default function ProblemManager() {
                 </div>
 
                 <div className="space-y-4">
+                  {/* Problem Image */}
+                  {selectedProblem.image_url && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Image</label>
+                      <img
+                        src={selectedProblem.image_url}
+                        alt="Problem illustration"
+                        className="mt-2 max-w-full max-h-40 rounded-lg border object-contain"
+                      />
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-sm font-medium text-gray-500">Original</label>
                     <p className="text-gray-800 mt-1">{selectedProblem.original_text}</p>
@@ -426,6 +441,30 @@ export default function ProblemManager() {
                       <p className="text-gray-800 mt-1">{selectedProblem.simplified_text}</p>
                     </div>
                   )}
+
+                  {/* Image URL Input */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 block mb-1">Image URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="https://example.com/image.png"
+                        defaultValue={selectedProblem.image_url || ''}
+                        onBlur={(e) => {
+                          const url = e.target.value.trim();
+                          if (url !== (selectedProblem.image_url || '')) {
+                            apiClient.updateProblem(selectedProblem.id, { image_url: url || undefined });
+                            setSelectedProblem({ ...selectedProblem, image_url: url || undefined });
+                            setProblems(problems.map(p =>
+                              p.id === selectedProblem.id ? { ...p, image_url: url || undefined } : p
+                            ));
+                          }
+                        }}
+                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Paste an image URL to show with the problem</p>
+                  </div>
 
                   {selectedProblem.steps && selectedProblem.steps.length > 0 && (
                     <div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { apiClient } from '../api/client';
 import type { Teacher, Student } from '../types';
@@ -38,23 +38,23 @@ export function useStudentAuth() {
   return context;
 }
 
-export function TeacherAuthProvider({ children }: { children: ReactNode }) {
-  const [teacher, setTeacher] = useState<Teacher | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('teacher_token');
-    const savedTeacher = localStorage.getItem('teacher_data');
-    if (token && savedTeacher) {
-      try {
-        setTeacher(JSON.parse(savedTeacher));
-      } catch {
-        localStorage.removeItem('teacher_token');
-        localStorage.removeItem('teacher_data');
-      }
+function getInitialTeacher(): Teacher | null {
+  const token = localStorage.getItem('teacher_token');
+  const savedTeacher = localStorage.getItem('teacher_data');
+  if (token && savedTeacher) {
+    try {
+      return JSON.parse(savedTeacher);
+    } catch {
+      localStorage.removeItem('teacher_token');
+      localStorage.removeItem('teacher_data');
     }
-    setIsLoading(false);
-  }, []);
+  }
+  return null;
+}
+
+export function TeacherAuthProvider({ children }: { children: ReactNode }) {
+  const [teacher, setTeacher] = useState<Teacher | null>(getInitialTeacher);
+  const [isLoading] = useState(false);
 
   const login = async (email: string, password: string) => {
     const result = await apiClient.loginTeacher(email, password);
@@ -89,27 +89,27 @@ export function TeacherAuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function StudentAuthProvider({ children }: { children: ReactNode }) {
-  const [student, setStudent] = useState<Student | null>(null);
-  const [className, setClassName] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('student_token');
-    const savedStudent = localStorage.getItem('student_data');
-    const savedClassName = localStorage.getItem('class_name');
-    if (token && savedStudent) {
-      try {
-        setStudent(JSON.parse(savedStudent));
-        setClassName(savedClassName);
-      } catch {
-        localStorage.removeItem('student_token');
-        localStorage.removeItem('student_data');
-        localStorage.removeItem('class_name');
-      }
+function getInitialStudent(): { student: Student | null; className: string | null } {
+  const token = localStorage.getItem('student_token');
+  const savedStudent = localStorage.getItem('student_data');
+  const savedClassName = localStorage.getItem('class_name');
+  if (token && savedStudent) {
+    try {
+      return { student: JSON.parse(savedStudent), className: savedClassName };
+    } catch {
+      localStorage.removeItem('student_token');
+      localStorage.removeItem('student_data');
+      localStorage.removeItem('class_name');
     }
-    setIsLoading(false);
-  }, []);
+  }
+  return { student: null, className: null };
+}
+
+export function StudentAuthProvider({ children }: { children: ReactNode }) {
+  const [studentState] = useState(getInitialStudent);
+  const [student, setStudent] = useState<Student | null>(studentState.student);
+  const [className, setClassName] = useState<string | null>(studentState.className);
+  const [isLoading] = useState(false);
 
   const join = async (classCode: string, passcode: string) => {
     const result = await apiClient.joinClass(classCode, passcode);

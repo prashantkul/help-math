@@ -61,7 +61,7 @@ pub async fn list_problems(
         }
 
         let problems: Vec<Problem> = sqlx::query_as(
-            "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, created_at FROM problems WHERE lesson_id = $1 ORDER BY created_at DESC"
+            "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, image_url, created_at FROM problems WHERE lesson_id = $1 ORDER BY created_at DESC"
         )
         .bind(lesson_id)
         .fetch_all(&state.db)
@@ -74,7 +74,7 @@ pub async fn list_problems(
         let mut responses = Vec::new();
         for problem in problems {
             let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
-                "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
+                "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
             )
             .bind(&problem.id)
             .fetch_all(&state.db)
@@ -111,7 +111,7 @@ pub async fn list_problems(
     }
 
     let problems: Vec<Problem> = sqlx::query_as(
-        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, created_at FROM problems WHERE class_id = $1 ORDER BY created_at DESC"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, image_url, created_at FROM problems WHERE class_id = $1 ORDER BY created_at DESC"
     )
     .bind(class_id)
     .fetch_all(&state.db)
@@ -124,7 +124,7 @@ pub async fn list_problems(
     let mut responses = Vec::new();
     for problem in problems {
         let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
-            "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
+            "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
         )
         .bind(&problem.id)
         .fetch_all(&state.db)
@@ -142,7 +142,7 @@ pub async fn get_problem(
     Path(problem_id): Path<String>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
     let problem: Option<Problem> = sqlx::query_as(
-        "SELECT p.id, p.class_id, p.lesson_id, p.original_text, p.simplified_text, p.skill_tags::text, p.difficulty, p.is_published, p.state, p.week_number, p.scene_emoji, p.created_at FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = $1 AND c.teacher_id = $2"
+        "SELECT p.id, p.class_id, p.lesson_id, p.original_text, p.simplified_text, p.skill_tags::text, p.difficulty, p.is_published, p.state, p.week_number, p.scene_emoji, p.image_url, p.created_at FROM problems p JOIN classes c ON p.class_id = c.id WHERE p.id = $1 AND c.teacher_id = $2"
     )
     .bind(&problem_id)
     .bind(&auth.teacher_id)
@@ -156,7 +156,7 @@ pub async fn get_problem(
     let problem = problem.ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))))?;
 
     let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
     )
     .bind(&problem_id)
     .fetch_all(&state.db)
@@ -246,7 +246,7 @@ pub async fn create_problem(
     })?;
 
     let problem: Problem = sqlx::query_as(
-        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, created_at FROM problems WHERE id = $1"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, image_url, created_at FROM problems WHERE id = $1"
     )
     .bind(&id)
     .fetch_one(&state.db)
@@ -461,9 +461,12 @@ pub async fn update_problem(
     if let Some(emoji) = &payload.scene_emoji {
         sqlx::query("UPDATE problems SET scene_emoji = $1 WHERE id = $2").bind(emoji).bind(&problem_id).execute(&state.db).await.ok();
     }
+    if let Some(url) = &payload.image_url {
+        sqlx::query("UPDATE problems SET image_url = $1 WHERE id = $2").bind(url).bind(&problem_id).execute(&state.db).await.ok();
+    }
 
     let problem: Problem = sqlx::query_as(
-        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, created_at FROM problems WHERE id = $1"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, image_url, created_at FROM problems WHERE id = $1"
     )
     .bind(&problem_id)
     .fetch_one(&state.db)
@@ -474,7 +477,7 @@ pub async fn update_problem(
     })?;
 
     let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
     )
     .bind(&problem_id)
     .fetch_all(&state.db)
@@ -523,7 +526,7 @@ pub async fn publish_problem(
         })?;
 
     let problem: Problem = sqlx::query_as(
-        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, created_at FROM problems WHERE id = $1"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, image_url, created_at FROM problems WHERE id = $1"
     )
     .bind(&problem_id)
     .fetch_one(&state.db)
@@ -534,7 +537,7 @@ pub async fn publish_problem(
     })?;
 
     let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
     )
     .bind(&problem_id)
     .fetch_all(&state.db)
@@ -584,7 +587,7 @@ pub async fn review_problem(
         })?;
 
     let problem: Problem = sqlx::query_as(
-        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, created_at FROM problems WHERE id = $1"
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, image_url, created_at FROM problems WHERE id = $1"
     )
     .bind(&problem_id)
     .fetch_one(&state.db)
@@ -595,7 +598,7 @@ pub async fn review_problem(
     })?;
 
     let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
     )
     .bind(&problem_id)
     .fetch_all(&state.db)
@@ -913,7 +916,7 @@ pub async fn reorder_scaffold_steps(
 
     // Fetch and return all steps in new order
     let steps: Vec<ScaffoldStep> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
     )
     .bind(&problem_id)
     .fetch_all(&state.db)

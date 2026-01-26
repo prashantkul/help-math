@@ -28,49 +28,51 @@ export default function Analytics() {
 
   useEffect(() => {
     if (classId && teacher) {
+      const fetchData = async () => {
+        setIsLoading(true);
+
+        const [classesResult, analyticsResult, studentsResult] = await Promise.all([
+          apiClient.getClasses(),
+          apiClient.getClassAnalytics(classId),
+          apiClient.getClassStudents(classId),
+        ]);
+
+        if (classesResult.data) {
+          const cls = classesResult.data.find((c) => c.id === classId);
+          if (cls) setClassData(cls);
+        }
+
+        if (analyticsResult.data) {
+          setClassAnalytics(analyticsResult.data);
+        }
+
+        if (studentsResult.data) {
+          setStudents(studentsResult.data);
+        }
+
+        setIsLoading(false);
+      };
       fetchData();
     }
   }, [classId, teacher]);
 
   useEffect(() => {
-    if (selectedStudentId) {
-      fetchStudentAnalytics(selectedStudentId);
-    } else {
+    if (!selectedStudentId) {
+      return;
+    }
+    const fetchStudentAnalytics = async (studentId: string) => {
+      const result = await apiClient.getStudentAnalytics(studentId);
+      if (result.data) {
+        setStudentAnalytics(result.data);
+      }
+    };
+    fetchStudentAnalytics(selectedStudentId);
+
+    // Cleanup: reset analytics when student changes
+    return () => {
       setStudentAnalytics(null);
-    }
+    };
   }, [selectedStudentId]);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-
-    const [classesResult, analyticsResult, studentsResult] = await Promise.all([
-      apiClient.getClasses(),
-      apiClient.getClassAnalytics(classId!),
-      apiClient.getClassStudents(classId!),
-    ]);
-
-    if (classesResult.data) {
-      const cls = classesResult.data.find((c) => c.id === classId);
-      if (cls) setClassData(cls);
-    }
-
-    if (analyticsResult.data) {
-      setClassAnalytics(analyticsResult.data);
-    }
-
-    if (studentsResult.data) {
-      setStudents(studentsResult.data);
-    }
-
-    setIsLoading(false);
-  };
-
-  const fetchStudentAnalytics = async (studentId: string) => {
-    const result = await apiClient.getStudentAnalytics(studentId);
-    if (result.data) {
-      setStudentAnalytics(result.data);
-    }
-  };
 
   if (authLoading || isLoading) {
     return (

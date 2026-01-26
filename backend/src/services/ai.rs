@@ -155,10 +155,10 @@ impl AIService {
         };
 
         let custom_instructions = custom_prompt
-            .map(|p| format!("\n\nADDITIONAL TEACHER INSTRUCTIONS:\n{}\n", p))
+            .map(|p| format!("\n\nIMPORTANT - TEACHER'S CUSTOM INSTRUCTIONS (follow these carefully):\n{}\n", p))
             .unwrap_or_default();
 
-        format!(r#"You are an expert elementary math educator specializing in helping English Language Learners (ELL) understand word problems. Your task is to decompose a 3rd grade math word problem into scaffolded steps.{custom_instructions}
+        format!(r#"You are an expert elementary math educator specializing in helping English Language Learners (ELL) understand word problems. Your task is to decompose a 3rd grade math word problem into scaffolded steps.
 
 Target audience: 8-9 year old students who are good at math but struggle with reading comprehension. Use {vocab_level}.
 
@@ -252,8 +252,8 @@ Rules:
 9. Always return valid JSON that can be parsed
 10. step_type should be a short descriptive label for the step (e.g., "find_objects", "identify_fractions", "partition_whole", "compare_fractions", "solve", etc.). Use snake_case format.
 11. answer_type MUST be one of: "multiple_choice", "number_input", "multi_select", "equation_builder" - this determines how students interact with the step
-
-Respond ONLY with the JSON object, no other text."#)
+{custom_instructions}
+Respond ONLY with the JSON object, no other text."#, custom_instructions = custom_instructions)
     }
 }
 

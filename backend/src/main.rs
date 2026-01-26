@@ -60,6 +60,7 @@ async fn main() -> anyhow::Result<()> {
         include_str!("../migrations/005_add_class_grade.sql"),
         include_str!("../migrations/006_soft_delete_classes.sql"),
         include_str!("../migrations/007_module_scaffold_prompt.sql"),
+        include_str!("../migrations/008_problem_images.sql"),
     ];
 
     for migration in migrations {

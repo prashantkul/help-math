@@ -25,7 +25,7 @@ interface ParsedExpression {
  */
 function parseExpression(text: string): ParsedExpression | null {
   // Clean up the text - remove common phrases
-  let cleanText = text
+  const cleanText = text
     .replace(/what is/gi, '')
     .replace(/\?/g, '')
     .replace(/=/g, '')

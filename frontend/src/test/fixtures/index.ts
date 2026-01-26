@@ -397,7 +397,12 @@ export const scaffoldingResponse: ScaffoldingResponse = {
   skill_tags: ['subtraction'],
   difficulty: 1,
   scene_emoji: '🍎',
-  steps: scaffoldSteps.map(({ id, problem_id, ...step }) => step),
+  steps: scaffoldSteps.map((step) => {
+    const { id, problem_id, ...rest } = step;
+    void id;
+    void problem_id;
+    return rest;
+  }),
 };
 
 // ============ EXPORT ALL FIXTURES ============

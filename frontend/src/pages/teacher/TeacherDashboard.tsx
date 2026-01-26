@@ -28,18 +28,17 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     if (teacher) {
+      const fetchClasses = async () => {
+        setIsLoading(true);
+        const result = await apiClient.getClasses();
+        if (result.data) {
+          setClasses(result.data);
+        }
+        setIsLoading(false);
+      };
       fetchClasses();
     }
   }, [teacher]);
-
-  const fetchClasses = async () => {
-    setIsLoading(true);
-    const result = await apiClient.getClasses();
-    if (result.data) {
-      setClasses(result.data);
-    }
-    setIsLoading(false);
-  };
 
   const handleCreateClass = async () => {
     if (!newClassName.trim()) return;

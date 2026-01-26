@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { ArrowLeft, Eye, ChevronLeft, ChevronRight, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, ProgressBar, ReadAloudButton, AnnotatableText } from '../../components/common';
@@ -8,7 +8,6 @@ import type { Problem, ScaffoldStep } from '../../types';
 
 // Import step components
 import FindObjectsStep from '../../components/student/steps/FindObjectsStep';
-import FindNumbersStep from '../../components/student/steps/FindNumbersStep';
 import IdentifyOperationStep from '../../components/student/steps/IdentifyOperationStep';
 import BuildEquationStep from '../../components/student/steps/BuildEquationStep';
 import SolveStep from '../../components/student/steps/SolveStep';
@@ -38,18 +37,17 @@ export default function ProblemPreview() {
 
   useEffect(() => {
     if (problemId && teacher) {
+      const fetchProblem = async () => {
+        setIsLoading(true);
+        const result = await apiClient.getProblem(problemId);
+        if (result.data) {
+          setProblem(result.data);
+        }
+        setIsLoading(false);
+      };
       fetchProblem();
     }
   }, [problemId, teacher]);
-
-  const fetchProblem = async () => {
-    setIsLoading(true);
-    const result = await apiClient.getProblem(problemId!);
-    if (result.data) {
-      setProblem(result.data);
-    }
-    setIsLoading(false);
-  };
 
   if (authLoading || isLoading) {
     return (
@@ -306,7 +304,7 @@ export default function ProblemPreview() {
         </Card>
 
         {/* Current Step */}
-        <div className="mb-6">
+        <div className="mb-6" key={currentStep}>
           {renderStepComponent(currentStepData)}
         </div>
 
@@ -328,7 +326,11 @@ export default function ProblemPreview() {
           <Button
             variant="outline"
             className="flex-1"
-            onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+            onClick={() => {
+              setStepResult(null);
+              setAttempts(0);
+              setCurrentStep(Math.max(0, currentStep - 1));
+            }}
             disabled={currentStep === 0}
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
@@ -337,7 +339,11 @@ export default function ProblemPreview() {
           <Button
             variant="primary"
             className="flex-1"
-            onClick={() => setCurrentStep(Math.min(totalSteps - 1, currentStep + 1))}
+            onClick={() => {
+              setStepResult(null);
+              setAttempts(0);
+              setCurrentStep(Math.min(totalSteps - 1, currentStep + 1));
+            }}
             disabled={currentStep === totalSteps - 1}
           >
             Next

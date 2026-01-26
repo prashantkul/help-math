@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Home } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -38,7 +38,7 @@ export default function ProblemSolver() {
     pointsEarned: number;
     hint?: string;
   } | null>(null);
-  const [celebrationShown, setCelebrationShown] = useState(false);
+  const celebrationTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !student) {
@@ -46,10 +46,10 @@ export default function ProblemSolver() {
     }
   }, [student, authLoading, navigate]);
 
-  // Show celebration when complete
+  // Show celebration when complete - use ref to track if already shown
   useEffect(() => {
-    if (isComplete && !celebrationShown) {
-      setCelebrationShown(true);
+    if (isComplete && !celebrationTriggeredRef.current) {
+      celebrationTriggeredRef.current = true;
       // Fire confetti!
       confetti({
         particleCount: 100,
@@ -73,7 +73,7 @@ export default function ProblemSolver() {
         });
       }, 400);
     }
-  }, [isComplete, celebrationShown]);
+  }, [isComplete]);
 
   if (authLoading || isLoading) {
     return (
@@ -187,7 +187,15 @@ export default function ProblemSolver() {
         <main className="flex-1 flex items-center justify-center p-6">
           <Card variant="warm" padding="lg" className="max-w-lg w-full text-center">
             <div className="mb-6">
-              <span className="text-6xl block mb-4">{problem.scene_emoji || '📚'}</span>
+              {problem.image_url ? (
+                <img
+                  src={problem.image_url}
+                  alt="Problem illustration"
+                  className="max-w-full max-h-48 mx-auto rounded-xl shadow-md mb-4 object-contain"
+                />
+              ) : (
+                <span className="text-6xl block mb-4">{problem.scene_emoji || '📚'}</span>
+              )}
               <h2 className="text-2xl font-bold text-gray-800 mb-4">
                 Here's your problem!
               </h2>
@@ -248,13 +256,22 @@ export default function ProblemSolver() {
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="max-w-lg w-full">
           {currentStepData && (
-            <StepRenderer
-              step={currentStepData}
-              onSubmit={handleSubmit}
-              result={stepResult}
-              onTryAgain={handleTryAgain}
-              attempts={attempts}
-            />
+            <div className="flex items-start gap-4">
+              {/* Step Number Circle */}
+              <div className="flex-shrink-0 w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-white text-xl font-bold">{currentStep + 1}</span>
+              </div>
+              {/* Step Content */}
+              <div className="flex-1">
+                <StepRenderer
+                  step={currentStepData}
+                  onSubmit={handleSubmit}
+                  result={stepResult}
+                  onTryAgain={handleTryAgain}
+                  attempts={attempts}
+                />
+              </div>
+            </div>
           )}
         </div>
       </main>
@@ -279,20 +296,31 @@ function StepRenderer({ step, onSubmit, result, onTryAgain, attempts }: StepRend
     attempts,
   };
 
-  switch (step.step_type) {
-    case 'find_objects':
+  // Route by answer_type for flexibility - step_type is just a label
+  // This allows the AI to create any step_type based on curriculum needs
+  switch (step.answer_type) {
+    case 'number_input':
+      return <SolveStep {...props} />;
+    case 'multi_select':
+      // Use FindNumbersStep for number-based multi-select, FindObjectsStep for text
+      if (step.step_type === 'find_numbers') {
+        return <FindNumbersStep {...props} />;
+      }
       return <FindObjectsStep {...props} />;
-    case 'find_numbers':
-      return <FindNumbersStep {...props} />;
-    case 'identify_operation':
-      return <IdentifyOperationStep {...props} />;
-    case 'build_equation':
-      return <BuildEquationStep {...props} />;
-    case 'solve':
-      return <SolveStep {...props} />;
-    case 'comprehension_check':
+    case 'multiple_choice':
+      // Use operation step if it looks like an operation choice
+      if (step.step_type === 'identify_operation' ||
+          (step.options && step.options.some(o =>
+            typeof o === 'object' && o !== null &&
+            ['+', '-', '×', '÷', 'add', 'subtract', 'multiply', 'divide'].includes(String((o as {value?: string}).value || '').toLowerCase())
+          ))) {
+        return <IdentifyOperationStep {...props} />;
+      }
       return <ComprehensionCheckStep {...props} />;
+    case 'equation_builder':
+      return <BuildEquationStep {...props} />;
     default:
-      return <SolveStep {...props} />;
+      // Fallback to comprehension check for any other type
+      return <ComprehensionCheckStep {...props} />;
   }
 }

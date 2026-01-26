@@ -15,6 +15,7 @@ pub struct Problem {
     pub state: String, // 'draft', 'scaffolded', 'reviewed', 'published'
     pub week_number: Option<i32>,
     pub scene_emoji: Option<String>,
+    pub image_url: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -32,6 +33,7 @@ pub struct ScaffoldStep {
     pub hints: String, // JSON array stored as text
     pub points: i32,
     pub emoji_hint: Option<String>,
+    pub image_url: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -51,6 +53,7 @@ pub struct UpdateProblem {
     pub is_published: Option<bool>,
     pub week_number: Option<i32>,
     pub scene_emoji: Option<String>,
+    pub image_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -71,6 +74,7 @@ pub struct ProblemResponse {
     pub state: String, // 'draft', 'scaffolded', 'reviewed', 'published'
     pub week_number: Option<i32>,
     pub scene_emoji: Option<String>,
+    pub image_url: Option<String>,
     pub created_at: String,
     pub steps: Option<Vec<ScaffoldStepResponse>>,
 }
@@ -89,6 +93,7 @@ pub struct ScaffoldStepResponse {
     pub hints: Vec<String>,
     pub points: i32,
     pub emoji_hint: Option<String>,
+    pub image_url: Option<String>,
 }
 
 impl From<ScaffoldStep> for ScaffoldStepResponse {
@@ -106,6 +111,7 @@ impl From<ScaffoldStep> for ScaffoldStepResponse {
             hints: serde_json::from_str(&step.hints).unwrap_or_default(),
             points: step.points,
             emoji_hint: step.emoji_hint,
+            image_url: step.image_url,
         }
     }
 }
@@ -124,6 +130,7 @@ impl ProblemResponse {
             state: problem.state,
             week_number: problem.week_number,
             scene_emoji: problem.scene_emoji,
+            image_url: problem.image_url,
             created_at: problem.created_at.to_rfc3339(),
             steps: steps.map(|s| s.into_iter().map(ScaffoldStepResponse::from).collect()),
         }

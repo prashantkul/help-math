@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { curriculumApi } from '../../api/curriculumApi';
 import type { ModuleSummary, CurriculumModule, CurriculumLesson, CurriculumProblem } from '../../types/curriculum';
 
@@ -17,12 +17,7 @@ export function CurriculumBrowser({ grade, onSelectProblems }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load modules list on mount or grade change
-  useEffect(() => {
-    loadModules();
-  }, [grade]);
-
-  const loadModules = async () => {
+  const loadModules = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -41,7 +36,12 @@ export function CurriculumBrowser({ grade, onSelectProblems }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [grade]);
+
+  // Load modules list on mount or grade change
+  useEffect(() => {
+    loadModules();
+  }, [loadModules]);
 
   const loadModule = async (moduleId: string) => {
     setLoading(true);

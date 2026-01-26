@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, UserX, Copy, Check, Settings, Plus, RefreshCw, Key, Users, X, Mail, Upload, Download, FileText, Edit2 } from 'lucide-react';
+import { ArrowLeft, Trash2, UserX, Copy, Check, Settings, Plus, RefreshCw, Key, Users, X, Mail, Upload, Download, Edit2 } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, Modal } from '../../components/common';
@@ -61,40 +61,39 @@ export default function ClassManagement() {
 
   useEffect(() => {
     if (classId && teacher) {
+      const fetchData = async () => {
+        setIsLoading(true);
+
+        const [classesResult, studentsResult, coTeachersResult] = await Promise.all([
+          apiClient.getClasses(),
+          apiClient.getClassStudents(classId),
+          apiClient.getCoTeachers(classId),
+        ]);
+
+        if (classesResult.data) {
+          const cls = classesResult.data.find((c) => c.id === classId);
+          if (cls) {
+            setClassData(cls);
+            setSettings({
+              ell_level: cls.settings.ell_level,
+              show_emojis: cls.settings.show_emojis,
+            });
+          }
+        }
+
+        if (studentsResult.data) {
+          setStudents(studentsResult.data);
+        }
+
+        if (coTeachersResult.data) {
+          setCoTeachers(coTeachersResult.data);
+        }
+
+        setIsLoading(false);
+      };
       fetchData();
     }
   }, [classId, teacher]);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-
-    const [classesResult, studentsResult, coTeachersResult] = await Promise.all([
-      apiClient.getClasses(),
-      apiClient.getClassStudents(classId!),
-      apiClient.getCoTeachers(classId!),
-    ]);
-
-    if (classesResult.data) {
-      const cls = classesResult.data.find((c) => c.id === classId);
-      if (cls) {
-        setClassData(cls);
-        setSettings({
-          ell_level: cls.settings.ell_level,
-          show_emojis: cls.settings.show_emojis,
-        });
-      }
-    }
-
-    if (studentsResult.data) {
-      setStudents(studentsResult.data);
-    }
-
-    if (coTeachersResult.data) {
-      setCoTeachers(coTeachersResult.data);
-    }
-
-    setIsLoading(false);
-  };
 
   const handleCopyCode = () => {
     if (classData) {

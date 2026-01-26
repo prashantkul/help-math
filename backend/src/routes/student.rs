@@ -44,12 +44,42 @@ pub async fn get_student_assignments(
     })?;
 
     let mut responses = Vec::new();
+
+    // First, add all published problems as a virtual "All Problems" assignment
+    let all_published: Vec<Problem> = sqlx::query_as(
+        "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, image_url, created_at FROM problems WHERE class_id = $1 AND is_published = true ORDER BY created_at DESC"
+    )
+    .bind(&student.class_id)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    if !all_published.is_empty() {
+        let problems: Vec<ProblemResponse> = all_published
+            .into_iter()
+            .map(|p| ProblemResponse::from_problem(p, None))
+            .collect();
+
+        // Create a virtual assignment containing all published problems
+        let virtual_assignment = Assignment {
+            id: "all-problems".to_string(),
+            class_id: student.class_id.clone(),
+            title: "All Problems".to_string(),
+            week_start: None,
+            week_end: None,
+            problem_ids: "[]".to_string(),
+            created_at: chrono::Utc::now(),
+        };
+        responses.push(AssignmentResponse::from_assignment(virtual_assignment, Some(problems)));
+    }
+
+    // Then add explicit assignments
     for assignment in assignments {
         let problem_ids: Vec<String> = serde_json::from_str(&assignment.problem_ids).unwrap_or_default();
         let mut problems = Vec::new();
         for pid in &problem_ids {
             if let Ok(Some(p)) = sqlx::query_as::<_, Problem>(
-                "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, created_at FROM problems WHERE id = $1 AND is_published = true"
+                "SELECT id, class_id, lesson_id, original_text, simplified_text, skill_tags::text, difficulty, is_published, state, week_number, scene_emoji, image_url, created_at FROM problems WHERE id = $1 AND is_published = true"
             ).bind(pid).fetch_optional(&state.db).await {
                 problems.push(ProblemResponse::from_problem(p, None));
             }
@@ -66,7 +96,7 @@ pub async fn get_student_problem(
     Path(problem_id): Path<String>,
 ) -> Result<Json<ProblemResponse>, (StatusCode, Json<serde_json::Value>)> {
     let problem: Option<Problem> = sqlx::query_as(
-        "SELECT p.id, p.class_id, p.lesson_id, p.original_text, p.simplified_text, p.skill_tags::text, p.difficulty, p.is_published, p.state, p.week_number, p.scene_emoji, p.created_at FROM problems p JOIN students s ON p.class_id = s.class_id WHERE p.id = $1 AND s.id = $2 AND p.is_published = true"
+        "SELECT p.id, p.class_id, p.lesson_id, p.original_text, p.simplified_text, p.skill_tags::text, p.difficulty, p.is_published, p.state, p.week_number, p.scene_emoji, p.image_url, p.created_at FROM problems p JOIN students s ON p.class_id = s.class_id WHERE p.id = $1 AND s.id = $2 AND p.is_published = true"
     )
     .bind(&problem_id)
     .bind(&auth.student_id)
@@ -80,7 +110,7 @@ pub async fn get_student_problem(
     let problem = problem.ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({"error": "Problem not found"}))))?;
 
     let steps: Option<Vec<ScaffoldStep>> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE problem_id = $1 ORDER BY step_order"
     )
     .bind(&problem_id)
     .fetch_all(&state.db)
@@ -107,7 +137,7 @@ pub async fn submit_step_attempt(
     Json(payload): Json<SubmitAttempt>,
 ) -> Result<Json<AttemptResult>, (StatusCode, Json<serde_json::Value>)> {
     let step: Option<ScaffoldStep> = sqlx::query_as(
-        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, created_at FROM scaffold_steps WHERE id = $1 AND problem_id = $2"
+        "SELECT id, problem_id, step_order, step_type, prompt_text, simplified_text, correct_answer, answer_type, options::text, hints::text, points, emoji_hint, image_url, created_at FROM scaffold_steps WHERE id = $1 AND problem_id = $2"
     )
     .bind(&payload.step_id)
     .bind(&problem_id)

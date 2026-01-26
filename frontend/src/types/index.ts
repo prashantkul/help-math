@@ -94,6 +94,7 @@ export interface Problem {
   state: ProblemState;
   week_number?: number;
   scene_emoji?: string;
+  image_url?: string;
   created_at: string;
   steps?: ScaffoldStep[];
 }
@@ -113,6 +114,7 @@ export interface ScaffoldStep {
   hints: string[];
   points: number;
   emoji_hint?: string;
+  image_url?: string;
 }
 
 // StepType is flexible - AI can generate any descriptive type based on curriculum

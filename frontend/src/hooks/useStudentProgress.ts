@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../api/client';
 import type { StudentProgress, Problem, Assignment } from '../types';
 
@@ -99,7 +99,7 @@ export function useProblemSession(problemId: string): UseProblemSessionReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isComplete, setIsComplete] = useState(false);
-  const [stepStartTime, setStepStartTime] = useState<number>(Date.now());
+  const stepStartTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const fetchProblem = async () => {
@@ -134,13 +134,14 @@ export function useProblemSession(problemId: string): UseProblemSessionReturn {
     }
   }, [problemId]);
 
+  // Initialize and reset step timer when step changes
   useEffect(() => {
-    setStepStartTime(Date.now());
-  }, [currentStep]);
+    stepStartTimeRef.current = Date.now();
+  }, [currentStep, problemId]);
 
   const submitAnswer = useCallback(
     async (stepId: string, answer: unknown) => {
-      const timeSpent = Math.floor((Date.now() - stepStartTime) / 1000);
+      const timeSpent = Math.floor((Date.now() - stepStartTimeRef.current) / 1000);
       setAttempts((prev) => prev + 1);
 
       const result = await apiClient.submitStepAttempt(
@@ -162,7 +163,7 @@ export function useProblemSession(problemId: string): UseProblemSessionReturn {
 
       return { isCorrect: is_correct, pointsEarned: points_earned, hint };
     },
-    [problemId, stepStartTime]
+    [problemId]
   );
 
   const nextStep = useCallback(() => {

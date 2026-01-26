@@ -10,12 +10,28 @@ interface StepProps {
   attempts?: number;
 }
 
+// Check if an option represents "no numbers"
+function isNoNumbersOption(opt: unknown): boolean {
+  if (typeof opt === 'string') {
+    const lower = opt.toLowerCase();
+    return lower.includes('no number') || lower === 'none' || lower === '[]';
+  }
+  return false;
+}
+
 export default function FindNumbersStep({ step, onSubmit, result, onTryAgain }: StepProps) {
   const [selected, setSelected] = useState<number[]>([]);
-  const options = step.options || [];
+  const [noNumbersSelected, setNoNumbersSelected] = useState(false);
+  const rawOptions = step.options || [];
+
+  // Separate number options from "no numbers" option
+  const noNumbersOption = rawOptions.find(opt => isNoNumbersOption(typeof opt === 'object' && opt !== null ? (opt as { value?: unknown }).value || opt : opt));
+  const numberOptions = rawOptions.filter(opt => !isNoNumbersOption(typeof opt === 'object' && opt !== null ? (opt as { value?: unknown }).value || opt : opt));
 
   const handleToggle = (value: number) => {
     if (result) return;
+    // Deselect "no numbers" when selecting a number
+    setNoNumbersSelected(false);
     setSelected((prev) =>
       prev.includes(value)
         ? prev.filter((v) => v !== value)
@@ -23,14 +39,26 @@ export default function FindNumbersStep({ step, onSubmit, result, onTryAgain }: 
     );
   };
 
+  const handleNoNumbers = () => {
+    if (result) return;
+    setNoNumbersSelected(!noNumbersSelected);
+    setSelected([]); // Clear number selections
+  };
+
   const handleSubmit = () => {
-    if (selected.length > 0) {
+    if (noNumbersSelected) {
+      // Submit empty array for "no numbers"
+      onSubmit([]);
+    } else if (selected.length > 0) {
       onSubmit(selected);
     }
   };
 
+  const canSubmit = noNumbersSelected || selected.length > 0;
+
   const handleTryAgain = () => {
     setSelected([]);
+    setNoNumbersSelected(false);
     onTryAgain();
   };
 
@@ -50,8 +78,8 @@ export default function FindNumbersStep({ step, onSubmit, result, onTryAgain }: 
 
       {/* Options - Numbers */}
       <div className="flex flex-wrap justify-center gap-3 mb-6">
-        {options.map((option) => {
-          const value = typeof option === 'number' ? option : Number(option.value || option);
+        {numberOptions.map((option) => {
+          const value = typeof option === 'number' ? option : Number(typeof option === 'object' && option !== null ? (option as { value?: unknown }).value : option);
           const isSelected = selected.includes(value);
 
           return (
@@ -71,6 +99,23 @@ export default function FindNumbersStep({ step, onSubmit, result, onTryAgain }: 
         })}
       </div>
 
+      {/* No Numbers option */}
+      {noNumbersOption && (
+        <div className="mb-6">
+          <button
+            onClick={handleNoNumbers}
+            disabled={!!result}
+            className={`px-6 py-3 rounded-2xl text-lg font-semibold transition-all duration-200 ${
+              noNumbersSelected
+                ? 'bg-indigo-500 text-white ring-4 ring-indigo-200 scale-105'
+                : 'bg-white text-gray-800 hover:bg-gray-50 border-2 border-gray-200'
+            } ${result ? 'cursor-not-allowed' : ''}`}
+          >
+            No numbers shown
+          </button>
+        </div>
+      )}
+
       {/* Selected numbers display */}
       {selected.length > 0 && (
         <div className="mb-6 p-4 bg-white rounded-2xl">
@@ -85,6 +130,14 @@ export default function FindNumbersStep({ step, onSubmit, result, onTryAgain }: 
               </span>
             ))}
           </div>
+        </div>
+      )}
+      {noNumbersSelected && (
+        <div className="mb-6 p-4 bg-white rounded-2xl">
+          <p className="text-gray-600 mb-2">You selected:</p>
+          <span className="bg-indigo-100 text-indigo-700 text-lg font-bold px-4 py-2 rounded-xl">
+            No numbers shown
+          </span>
         </div>
       )}
 
@@ -122,7 +175,7 @@ export default function FindNumbersStep({ step, onSubmit, result, onTryAgain }: 
           size="xl"
           className="w-full"
           onClick={handleSubmit}
-          disabled={selected.length === 0}
+          disabled={!canSubmit}
         >
           Check My Answer
         </Button>
