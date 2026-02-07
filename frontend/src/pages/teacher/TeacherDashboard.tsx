@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, BarChart3, LogOut, Copy, Check, FolderOpen, Trash2 } from 'lucide-react';
+import { Plus, Users, BookOpen, BarChart3, LogOut, Copy, Check, FolderOpen, Trash2, Palette, ClipboardCheck } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, Modal } from '../../components/common';
@@ -135,10 +135,24 @@ export default function TeacherDashboard() {
             <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Your Classes</h2>
             <p className="text-gray-500">Manage your classes and assignments</p>
           </div>
-          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-5 h-5 mr-2" />
-            New Class
-          </Button>
+          <div className="flex items-center gap-3">
+            <Link to="/teacher/style">
+              <Button variant="outline">
+                <Palette className="w-5 h-5 mr-2" />
+                My Style
+              </Button>
+            </Link>
+            <Link to="/teacher/grading">
+              <Button variant="outline">
+                <ClipboardCheck className="w-5 h-5 mr-2" />
+                Grading
+              </Button>
+            </Link>
+            <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-5 h-5 mr-2" />
+              New Class
+            </Button>
+          </div>
         </div>
 
         {/* Classes Grid */}

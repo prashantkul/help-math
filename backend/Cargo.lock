@@ -1459,6 +1459,7 @@ dependencies = [
  "anyhow",
  "axum",
  "axum-test",
+ "base64 0.21.7",
  "bcrypt",
  "chrono",
  "dotenvy",

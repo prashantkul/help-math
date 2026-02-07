@@ -333,3 +333,109 @@ export interface UpdateScaffoldStep {
   points?: number;
   emoji_hint?: string;
 }
+
+// ====== Teacher Style Learning Types ======
+
+export interface StyleStrictness {
+  spelling: string;
+  math_work_shown: string;
+  neatness: string;
+}
+
+export interface StyleProfile {
+  tone: string;
+  praise_phrases: string[];
+  correction_phrases: string[];
+  correction_style: string;
+  strictness: StyleStrictness;
+  common_annotations: string[];
+  visual_markers: string[];
+  feedback_length: string;
+  differentiation_notes: string;
+  sample_count: number;
+  confidence_score: number;
+}
+
+export interface StyleProfileResponse {
+  profile: StyleProfile;
+  confidence: number;
+  sample_count: number;
+}
+
+export interface StyleSample {
+  id: string;
+  file_path: string;
+  file_type: string;
+  extracted_annotations: Record<string, unknown>;
+  feedback_patterns: Record<string, unknown>;
+  processed: boolean;
+  created_at: string;
+}
+
+export interface UpdateStyleProfile {
+  tone?: string;
+  praise_phrases?: string[];
+  correction_phrases?: string[];
+  correction_style?: string;
+  strictness?: StyleStrictness;
+  common_annotations?: string[];
+  visual_markers?: string[];
+  feedback_length?: string;
+  differentiation_notes?: string;
+}
+
+export interface TestStyleRequest {
+  student_work: string;
+  student_name?: string;
+  grade_level?: number;
+  subject?: string;
+}
+
+export interface TestStyleResponse {
+  feedback: string;
+  style_applied: boolean;
+}
+
+// ====== AI-Assisted Grading Types ======
+
+export interface GradedSubmission {
+  id: string;
+  assignment_id?: string;
+  student_id: string;
+  student_name?: string;
+  content: Record<string, unknown>;
+  scanned_file?: string;
+  ai_feedback?: string;
+  ai_score?: number;
+  ai_skill_gaps: string[];
+  teacher_approved: boolean;
+  teacher_edits?: string;
+  final_feedback?: string;
+  final_score?: number;
+  status: 'submitted' | 'ai_graded' | 'teacher_reviewed' | 'returned';
+  submitted_at: string;
+  graded_at?: string;
+  returned_at?: string;
+}
+
+export interface GradingQueueResponse {
+  submissions: GradedSubmission[];
+  stats: GradingQueueStats;
+}
+
+export interface GradingQueueStats {
+  total: number;
+  submitted: number;
+  ai_graded: number;
+  teacher_reviewed: number;
+  returned: number;
+}
+
+export interface ApproveGradingRequest {
+  edits?: string;
+  final_score?: number;
+}
+
+export interface BatchApproveRequest {
+  submission_ids: string[];
+}

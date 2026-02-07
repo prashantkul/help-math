@@ -24,6 +24,7 @@ rust-s3 = { version = "0.34", default-features = false, features = ["tokio-rustl
 pdf-extract = "0.7"
 lopdf = "0.31"
 rand = "0.8"
+base64 = "0.21"
 
 [dev-dependencies]
 axum-test = "16"

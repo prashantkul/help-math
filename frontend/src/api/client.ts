@@ -22,6 +22,13 @@ import type {
   CreateScaffoldStep,
   UpdateScaffoldStep,
   ScaffoldStep,
+  StyleProfileResponse,
+  StyleSample,
+  UpdateStyleProfile,
+  TestStyleResponse,
+  GradingQueueResponse,
+  GradedSubmission,
+  ApproveGradingRequest,
 } from '../types';
 
 // API URL is set via environment files:
@@ -511,6 +518,96 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify({ avatar }),
     }, false);
+  }
+
+  // ====== Teacher Style Learning ======
+
+  async uploadStyleSample(file: File): Promise<ApiResponse<StyleSample>> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE}/teacher/style/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.teacherToken}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { error: data.error || 'Upload failed' };
+    }
+    return { data };
+  }
+
+  async getStyleProfile(): Promise<ApiResponse<StyleProfileResponse>> {
+    return this.request<StyleProfileResponse>('/teacher/style/profile');
+  }
+
+  async updateStyleProfile(updates: UpdateStyleProfile): Promise<ApiResponse<StyleProfileResponse>> {
+    return this.request<StyleProfileResponse>('/teacher/style/profile', {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async testStyle(studentWork: string, studentName?: string, gradeLevel?: number, subject?: string): Promise<ApiResponse<TestStyleResponse>> {
+    return this.request<TestStyleResponse>('/teacher/style/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        student_work: studentWork,
+        student_name: studentName,
+        grade_level: gradeLevel,
+        subject,
+      }),
+    });
+  }
+
+  async getStyleSamples(): Promise<ApiResponse<StyleSample[]>> {
+    return this.request<StyleSample[]>('/teacher/style/samples');
+  }
+
+  async deleteStyleSample(sampleId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/teacher/style/samples/${sampleId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ====== AI-Assisted Grading ======
+
+  async getGradingQueue(): Promise<ApiResponse<GradingQueueResponse>> {
+    return this.request<GradingQueueResponse>('/teacher/grading/queue');
+  }
+
+  async aiGradeSubmission(submissionId: string): Promise<ApiResponse<GradedSubmission>> {
+    return this.request<GradedSubmission>(`/teacher/grading/${submissionId}/ai-grade`, {
+      method: 'POST',
+    });
+  }
+
+  async approveGrading(submissionId: string, request: ApproveGradingRequest): Promise<ApiResponse<GradedSubmission>> {
+    return this.request<GradedSubmission>(`/teacher/grading/${submissionId}/approve`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async rejectGrading(submissionId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/teacher/grading/${submissionId}/reject`, {
+      method: 'PUT',
+    });
+  }
+
+  async batchApproveGrading(submissionIds: string[]): Promise<ApiResponse<{ approved_count: number; total_requested: number }>> {
+    return this.request<{ approved_count: number; total_requested: number }>('/teacher/grading/batch-approve', {
+      method: 'POST',
+      body: JSON.stringify({ submission_ids: submissionIds }),
+    });
+  }
+
+  async getStudentFeedback(assignmentId: string): Promise<ApiResponse<GradedSubmission[]>> {
+    return this.request<GradedSubmission[]>(`/student/feedback/${assignmentId}`, {}, false);
   }
 }
 

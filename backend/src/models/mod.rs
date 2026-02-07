@@ -8,6 +8,8 @@ pub mod class_teacher;
 pub mod module;
 pub mod lesson;
 pub mod curriculum;
+pub mod style;
+pub mod grading;
 
 pub use teacher::*;
 pub use class::*;
@@ -19,3 +21,5 @@ pub use class_teacher::*;
 pub use module::*;
 pub use lesson::*;
 pub use curriculum::*;
+pub use style::*;
+pub use grading::*;

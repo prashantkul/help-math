@@ -15,7 +15,7 @@ mod models;
 mod routes;
 mod services;
 
-use services::{AIService, AuthService, GradingService, TTSService};
+use services::{AIService, AuthService, GradingService, TTSService, StyleAIService};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -24,6 +24,7 @@ pub struct AppState {
     pub ai_service: Arc<AIService>,
     pub grading_service: Arc<GradingService>,
     pub tts_service: Arc<TTSService>,
+    pub style_ai_service: Arc<StyleAIService>,
 }
 
 #[tokio::main]
@@ -61,6 +62,7 @@ async fn main() -> anyhow::Result<()> {
         include_str!("../migrations/006_soft_delete_classes.sql"),
         include_str!("../migrations/007_module_scaffold_prompt.sql"),
         include_str!("../migrations/008_problem_images.sql"),
+        include_str!("../migrations/009_teacher_style_grading.sql"),
     ];
 
     for migration in migrations {
@@ -81,9 +83,10 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         db,
         auth_service: Arc::new(AuthService::new(jwt_secret)),
-        ai_service: Arc::new(AIService::new(anthropic_api_key)),
+        ai_service: Arc::new(AIService::new(anthropic_api_key.clone())),
         grading_service: Arc::new(GradingService::new()),
         tts_service: Arc::new(TTSService::new(eleven_api_key, eleven_voice_id)),
+        style_ai_service: Arc::new(StyleAIService::new(anthropic_api_key)),
     };
 
     // Build protected teacher routes
@@ -117,6 +120,18 @@ async fn main() -> anyhow::Result<()> {
         .route("/assignments", get(routes::list_assignments).post(routes::create_assignment))
         .route("/analytics/class/:id", get(routes::get_class_analytics))
         .route("/analytics/student/:id", get(routes::get_student_analytics))
+        // Teacher Style Learning routes
+        .route("/teacher/style/upload", post(routes::upload_style_sample))
+        .route("/teacher/style/profile", get(routes::get_style_profile).put(routes::update_style_profile))
+        .route("/teacher/style/test", post(routes::test_style))
+        .route("/teacher/style/samples", get(routes::list_style_samples))
+        .route("/teacher/style/samples/:id", delete(routes::delete_style_sample))
+        // AI Grading routes
+        .route("/teacher/grading/queue", get(routes::get_grading_queue))
+        .route("/teacher/grading/:id/ai-grade", post(routes::ai_grade_submission))
+        .route("/teacher/grading/:id/approve", put(routes::approve_grading))
+        .route("/teacher/grading/:id/reject", put(routes::reject_grading))
+        .route("/teacher/grading/batch-approve", post(routes::batch_approve_grading))
         .layer(axum_middleware::from_fn_with_state(state.clone(), app_middleware::teacher_auth_middleware));
 
     // Build protected student routes
@@ -127,6 +142,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/progress", get(routes::get_student_progress))
         .route("/profile", get(routes::get_student_profile))
         .route("/avatar", put(routes::update_student_avatar))
+        .route("/feedback/:assignment_id", get(routes::get_student_feedback))
         .layer(axum_middleware::from_fn_with_state(state.clone(), app_middleware::student_auth_middleware));
 
     // Build public auth routes

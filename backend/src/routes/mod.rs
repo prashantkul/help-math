@@ -7,6 +7,8 @@ pub mod analytics;
 pub mod modules;
 pub mod curriculum;
 pub mod tts;
+pub mod style;
+pub mod grading;
 
 pub use auth::*;
 pub use classes::*;
@@ -17,3 +19,5 @@ pub use analytics::*;
 pub use modules::*;
 pub use curriculum::*;
 pub use tts::*;
+pub use style::*;
+pub use grading::*;

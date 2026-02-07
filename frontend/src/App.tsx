@@ -10,9 +10,12 @@ import ProblemManager from './pages/teacher/ProblemManager';
 import ProblemPreview from './pages/teacher/ProblemPreview';
 import CurriculumManager from './pages/teacher/CurriculumManager';
 import Analytics from './pages/teacher/Analytics';
+import StyleProfilePage from './pages/teacher/StyleProfile';
+import GradingDashboard from './pages/teacher/GradingDashboard';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentDashboard from './pages/student/StudentDashboard';
 import ProblemSolver from './pages/student/ProblemSolver';
+import StudentFeedback from './pages/student/StudentFeedback';
 import { ForgotPasswordPage, ResetPasswordPage } from './pages/auth';
 
 function App() {
@@ -40,6 +43,8 @@ function App() {
                 <Route path="lessons/:lessonId/problems" element={<ProblemManager />} />
                 <Route path="problems/:problemId/preview" element={<ProblemPreview />} />
                 <Route path="analytics/:classId" element={<Analytics />} />
+                <Route path="style" element={<StyleProfilePage />} />
+                <Route path="grading" element={<GradingDashboard />} />
                 <Route path="*" element={<Navigate to="/teacher/login" replace />} />
               </Routes>
             </TeacherAuthProvider>
@@ -55,6 +60,7 @@ function App() {
                 <Route path="login" element={<StudentLogin />} />
                 <Route path="dashboard" element={<StudentDashboard />} />
                 <Route path="problem/:problemId" element={<ProblemSolver />} />
+                <Route path="feedback/:assignmentId" element={<StudentFeedback />} />
                 <Route path="*" element={<Navigate to="/student/login" replace />} />
               </Routes>
             </StudentAuthProvider>
