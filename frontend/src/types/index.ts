@@ -334,7 +334,7 @@ export interface UpdateScaffoldStep {
   emoji_hint?: string;
 }
 
-// ====== Teacher Style Learning Types ======
+// ====== Teacher Style Learning Types (4-Tier Deep Style) ======
 
 export interface StyleStrictness {
   spelling: string;
@@ -356,10 +356,38 @@ export interface StyleProfile {
   confidence_score: number;
 }
 
+export interface ConditionalResponseSummary {
+  condition: string;
+  description: string;
+  response_type: string;
+  example_phrases: string[];
+  evidence_count: number;
+}
+
+export interface DeepModelSummary {
+  voice_description: string;
+  conditional_responses: ConditionalResponseSummary[];
+  gaps: string[];
+  last_synthesized?: string;
+}
+
+export interface StyleOverrides {
+  always_say: string[];
+  never_say: string[];
+  feedback_length?: string;
+  grading_priorities: string[];
+}
+
 export interface StyleProfileResponse {
   profile: StyleProfile;
   confidence: number;
   sample_count: number;
+  has_deep_model: boolean;
+  deep_model?: DeepModelSummary;
+  overrides: StyleOverrides;
+  annotation_count: number;
+  correction_count: number;
+  recent_corrections_summary?: string;
 }
 
 export interface StyleSample {
@@ -369,6 +397,8 @@ export interface StyleSample {
   extracted_annotations: Record<string, unknown>;
   feedback_patterns: Record<string, unknown>;
   processed: boolean;
+  extraction_status: string;
+  annotation_count: number;
   created_at: string;
 }
 
@@ -384,6 +414,13 @@ export interface UpdateStyleProfile {
   differentiation_notes?: string;
 }
 
+export interface UpdateStyleOverrides {
+  always_say?: string[];
+  never_say?: string[];
+  feedback_length?: string;
+  grading_priorities?: string[];
+}
+
 export interface TestStyleRequest {
   student_work: string;
   student_name?: string;
@@ -394,6 +431,71 @@ export interface TestStyleRequest {
 export interface TestStyleResponse {
   feedback: string;
   style_applied: boolean;
+}
+
+// Tier 1 extraction
+export interface ExtractionResponse {
+  processed: number;
+  annotations_extracted: number;
+  synthesis_triggered: boolean;
+}
+
+// Tier 2 synthesis
+export interface SynthesisResponse {
+  synthesis_id: string;
+  annotations_analyzed: number;
+  samples_analyzed: number;
+  confidence: number;
+  gaps: string[];
+  voice_description: string;
+  conditional_responses_count: number;
+}
+
+// Tier 4 correction
+export interface LearnFromCorrectionRequest {
+  submission_id?: string;
+  ai_feedback: string;
+  teacher_feedback: string;
+  student_id?: string;
+  assignment_context?: string;
+  student_work_summary?: string;
+}
+
+export interface CorrectionResponse {
+  correction_id: string;
+  insights: string[];
+}
+
+// Test My Style (blind test)
+export interface StyleTestItem {
+  item_id: number;
+  student_work: string;
+  error_context?: string;
+  feedback: string;
+}
+
+export interface GenerateTestResponse {
+  test_id: string;
+  items: StyleTestItem[];
+}
+
+export interface TestRating {
+  item_id: number;
+  sounds_like_me: boolean;
+  what_id_change?: string;
+}
+
+export interface TestResultsResponse {
+  test_id: string;
+  results: {
+    ai_items_approved: number;
+    ai_items_total: number;
+    real_items_approved: number;
+    real_items_total: number;
+    pass_rate: number;
+    confidence_update: string;
+    insights: string;
+  };
 }
 
 // ====== AI-Assisted Grading Types ======

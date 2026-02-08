@@ -64,6 +64,7 @@ async fn main() -> anyhow::Result<()> {
         include_str!("../migrations/008_problem_images.sql"),
         include_str!("../migrations/009_teacher_style_grading.sql"),
         include_str!("../migrations/010_scan_pipeline.sql"),
+        include_str!("../migrations/011_deep_style_learning.sql"),
     ];
 
     for migration in migrations {
@@ -121,10 +122,16 @@ async fn main() -> anyhow::Result<()> {
         .route("/assignments", get(routes::list_assignments).post(routes::create_assignment))
         .route("/analytics/class/:id", get(routes::get_class_analytics))
         .route("/analytics/student/:id", get(routes::get_student_analytics))
-        // Teacher Style Learning routes
+        // Teacher Style Learning routes (4-tier deep style)
         .route("/teacher/style/upload", post(routes::upload_style_sample))
+        .route("/teacher/style/extract", post(routes::extract_samples))
+        .route("/teacher/style/synthesize", post(routes::synthesize_style))
         .route("/teacher/style/profile", get(routes::get_style_profile).put(routes::update_style_profile))
+        .route("/teacher/style/overrides", put(routes::update_style_overrides))
         .route("/teacher/style/test", post(routes::test_style))
+        .route("/teacher/style/test/generate", post(routes::generate_style_test))
+        .route("/teacher/style/test/:id/submit", post(routes::submit_style_test))
+        .route("/teacher/style/learn-correction", post(routes::learn_from_correction))
         .route("/teacher/style/samples", get(routes::list_style_samples))
         .route("/teacher/style/samples/:id", delete(routes::delete_style_sample))
         // AI Grading routes

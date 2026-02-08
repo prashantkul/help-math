@@ -25,7 +25,16 @@ import type {
   StyleProfileResponse,
   StyleSample,
   UpdateStyleProfile,
+  UpdateStyleOverrides,
+  StyleOverrides,
   TestStyleResponse,
+  ExtractionResponse,
+  SynthesisResponse,
+  LearnFromCorrectionRequest,
+  CorrectionResponse,
+  GenerateTestResponse,
+  TestRating,
+  TestResultsResponse,
   GradingQueueResponse,
   GradedSubmission,
   ApproveGradingRequest,
@@ -575,6 +584,48 @@ class ApiClient {
   async deleteStyleSample(sampleId: string): Promise<ApiResponse<void>> {
     return this.request<void>(`/teacher/style/samples/${sampleId}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Deep Style Learning (4-Tier)
+
+  async extractStyleSamples(sampleIds?: string[]): Promise<ApiResponse<ExtractionResponse>> {
+    return this.request<ExtractionResponse>('/teacher/style/extract', {
+      method: 'POST',
+      body: JSON.stringify({ sample_ids: sampleIds }),
+    });
+  }
+
+  async synthesizeStyle(): Promise<ApiResponse<SynthesisResponse>> {
+    return this.request<SynthesisResponse>('/teacher/style/synthesize', {
+      method: 'POST',
+    });
+  }
+
+  async updateStyleOverrides(overrides: UpdateStyleOverrides): Promise<ApiResponse<StyleOverrides>> {
+    return this.request<StyleOverrides>('/teacher/style/overrides', {
+      method: 'PUT',
+      body: JSON.stringify(overrides),
+    });
+  }
+
+  async generateStyleTest(): Promise<ApiResponse<GenerateTestResponse>> {
+    return this.request<GenerateTestResponse>('/teacher/style/test/generate', {
+      method: 'POST',
+    });
+  }
+
+  async submitStyleTest(testId: string, ratings: TestRating[]): Promise<ApiResponse<TestResultsResponse>> {
+    return this.request<TestResultsResponse>(`/teacher/style/test/${testId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ ratings }),
+    });
+  }
+
+  async learnFromCorrection(request: LearnFromCorrectionRequest): Promise<ApiResponse<CorrectionResponse>> {
+    return this.request<CorrectionResponse>('/teacher/style/learn-correction', {
+      method: 'POST',
+      body: JSON.stringify(request),
     });
   }
 
