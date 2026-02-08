@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, BarChart3, LogOut, Copy, Check, FolderOpen, Trash2, Palette, ClipboardCheck } from 'lucide-react';
+import { Plus, Users, BookOpen, BarChart3, LogOut, Copy, Check, FolderOpen, Trash2, Palette, ClipboardCheck, ScanLine } from 'lucide-react';
 import { useTeacherAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../api/client';
 import { Button, Card, Loading, Modal } from '../../components/common';
@@ -146,6 +146,12 @@ export default function TeacherDashboard() {
               <Button variant="outline">
                 <ClipboardCheck className="w-5 h-5 mr-2" />
                 Grading
+              </Button>
+            </Link>
+            <Link to="/teacher/scan">
+              <Button variant="outline">
+                <ScanLine className="w-5 h-5 mr-2" />
+                Scanner
               </Button>
             </Link>
             <Button variant="primary" onClick={() => setShowCreateModal(true)}>

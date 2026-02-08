@@ -63,6 +63,7 @@ async fn main() -> anyhow::Result<()> {
         include_str!("../migrations/007_module_scaffold_prompt.sql"),
         include_str!("../migrations/008_problem_images.sql"),
         include_str!("../migrations/009_teacher_style_grading.sql"),
+        include_str!("../migrations/010_scan_pipeline.sql"),
     ];
 
     for migration in migrations {
@@ -132,6 +133,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/teacher/grading/:id/approve", put(routes::approve_grading))
         .route("/teacher/grading/:id/reject", put(routes::reject_grading))
         .route("/teacher/grading/batch-approve", post(routes::batch_approve_grading))
+        // Scan Pipeline routes
+        .route("/teacher/scan/upload", post(routes::upload_scan_batch))
+        .route("/teacher/scan/batches", get(routes::list_scan_batches))
+        .route("/teacher/scan/batch/:id/identify", post(routes::identify_scan_batch))
+        .route("/teacher/scan/batch/:id/review", get(routes::review_scan_batch))
+        .route("/teacher/scan/batch/:id/confirm", put(routes::confirm_scan_batch))
+        .route("/teacher/scan/batch/:id/status", get(routes::get_scan_batch_status))
         .layer(axum_middleware::from_fn_with_state(state.clone(), app_middleware::teacher_auth_middleware));
 
     // Build protected student routes

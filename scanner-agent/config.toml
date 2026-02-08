@@ -1,0 +1,47 @@
+# Scanner Agent Configuration
+# Copy this file to config.local.toml and edit for your environment
+
+[server]
+# Backend API URL
+url = "http://localhost:3001"
+
+[auth]
+# Teacher email and password for API authentication
+email = ""
+password = ""
+
+[scanner]
+# Directory to watch for new scan files
+watch_dir = "~/Documents/ScannerOutput"
+
+# File extensions to process
+extensions = ["pdf", "jpg", "jpeg", "png", "webp"]
+
+# How often to check for new files (seconds)
+poll_interval = 2
+
+# Minimum file age before processing (seconds) - ensures file write is complete
+min_file_age = 3
+
+# Delete files after successful upload
+delete_after_upload = false
+
+# Move processed files to this subdirectory (empty = don't move)
+archive_dir = "processed"
+
+[defaults]
+# Default scan mode: "style" or "grade"
+mode = "grade"
+
+# Default class ID (optional, leave empty to select each time)
+class_id = ""
+
+# Default assignment ID (optional, leave empty to select each time)
+assignment_id = ""
+
+[notifications]
+# Enable desktop notifications
+enabled = true
+
+# Play sound on scan completion
+sound = false

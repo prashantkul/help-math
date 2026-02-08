@@ -10,6 +10,7 @@ pub mod lesson;
 pub mod curriculum;
 pub mod style;
 pub mod grading;
+pub mod scan;
 
 pub use teacher::*;
 pub use class::*;
@@ -23,3 +24,4 @@ pub use lesson::*;
 pub use curriculum::*;
 pub use style::*;
 pub use grading::*;
+pub use scan::*;

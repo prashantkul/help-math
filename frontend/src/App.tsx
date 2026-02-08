@@ -12,6 +12,8 @@ import CurriculumManager from './pages/teacher/CurriculumManager';
 import Analytics from './pages/teacher/Analytics';
 import StyleProfilePage from './pages/teacher/StyleProfile';
 import GradingDashboard from './pages/teacher/GradingDashboard';
+import ScanCenter from './pages/teacher/ScanCenter';
+import ScanReview from './pages/teacher/ScanReview';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentDashboard from './pages/student/StudentDashboard';
 import ProblemSolver from './pages/student/ProblemSolver';
@@ -45,6 +47,8 @@ function App() {
                 <Route path="analytics/:classId" element={<Analytics />} />
                 <Route path="style" element={<StyleProfilePage />} />
                 <Route path="grading" element={<GradingDashboard />} />
+                <Route path="scan" element={<ScanCenter />} />
+                <Route path="scan/review/:batchId" element={<ScanReview />} />
                 <Route path="*" element={<Navigate to="/teacher/login" replace />} />
               </Routes>
             </TeacherAuthProvider>

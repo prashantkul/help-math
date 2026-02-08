@@ -9,6 +9,7 @@ pub mod curriculum;
 pub mod tts;
 pub mod style;
 pub mod grading;
+pub mod scan;
 
 pub use auth::*;
 pub use classes::*;
@@ -21,3 +22,4 @@ pub use curriculum::*;
 pub use tts::*;
 pub use style::*;
 pub use grading::*;
+pub use scan::*;

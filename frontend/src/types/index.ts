@@ -439,3 +439,64 @@ export interface ApproveGradingRequest {
 export interface BatchApproveRequest {
   submission_ids: string[];
 }
+
+// ====== Scan Pipeline Types ======
+
+export interface ScanBatch {
+  id: string;
+  mode: 'style' | 'grade';
+  assignment_id?: string;
+  class_id?: string;
+  total_pages: number;
+  pages_processed: number;
+  status: string;
+  error_message?: string;
+  progress_percent: number;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface ScanUploadResponse {
+  batch_id: string;
+  total_pages: number;
+  status: string;
+  message: string;
+}
+
+export interface StudentMatchInfo {
+  detected_name?: string;
+  matched_student_id?: string;
+  matched_student_name?: string;
+  confidence: number;
+  match_type: string;
+  status: 'auto_matched' | 'needs_confirmation' | 'unmatched';
+}
+
+export interface ScanPageResponse {
+  page_id: string;
+  page_number: number;
+  file_path: string;
+  thumbnail_path?: string;
+  student_match?: StudentMatchInfo;
+  processing_status: string;
+  error_message?: string;
+}
+
+export interface BatchReviewResponse {
+  batch_id: string;
+  mode: string;
+  status: string;
+  assignment?: { id: string; title: string };
+  pages: ScanPageResponse[];
+  summary: {
+    total: number;
+    auto_matched: number;
+    needs_confirmation: number;
+    unmatched: number;
+  };
+}
+
+export interface ConfirmMatchesRequest {
+  corrections: Array<{ page_id: string; student_id: string }>;
+  confirm_all_auto: boolean;
+}

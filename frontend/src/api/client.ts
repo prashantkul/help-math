@@ -29,6 +29,10 @@ import type {
   GradingQueueResponse,
   GradedSubmission,
   ApproveGradingRequest,
+  ScanBatch,
+  ScanUploadResponse,
+  BatchReviewResponse,
+  ConfirmMatchesRequest,
 } from '../types';
 
 // API URL is set via environment files:
@@ -608,6 +612,61 @@ class ApiClient {
 
   async getStudentFeedback(assignmentId: string): Promise<ApiResponse<GradedSubmission[]>> {
     return this.request<GradedSubmission[]>(`/student/feedback/${assignmentId}`, {}, false);
+  }
+
+  // ====== Scan Pipeline ======
+
+  async uploadScanBatch(files: File[], mode: 'style' | 'grade', classId?: string, assignmentId?: string): Promise<ApiResponse<ScanUploadResponse>> {
+    const formData = new FormData();
+    formData.append('mode', mode);
+    if (classId) formData.append('class_id', classId);
+    if (assignmentId) formData.append('assignment_id', assignmentId);
+    for (const file of files) {
+      formData.append('files', file);
+    }
+
+    const response = await fetch(`${API_BASE}/teacher/scan/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.teacherToken}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { error: data.error || 'Upload failed' };
+    }
+    return { data };
+  }
+
+  async getScanBatches(mode?: string, status?: string): Promise<ApiResponse<ScanBatch[]>> {
+    const params = new URLSearchParams();
+    if (mode) params.append('mode', mode);
+    if (status) params.append('status', status);
+    const qs = params.toString();
+    return this.request<ScanBatch[]>(`/teacher/scan/batches${qs ? '?' + qs : ''}`);
+  }
+
+  async getScanBatchStatus(batchId: string): Promise<ApiResponse<ScanBatch>> {
+    return this.request<ScanBatch>(`/teacher/scan/batch/${batchId}/status`);
+  }
+
+  async identifyScanBatch(batchId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/teacher/scan/batch/${batchId}/identify`, {
+      method: 'POST',
+    });
+  }
+
+  async reviewScanBatch(batchId: string): Promise<ApiResponse<BatchReviewResponse>> {
+    return this.request<BatchReviewResponse>(`/teacher/scan/batch/${batchId}/review`);
+  }
+
+  async confirmScanBatch(batchId: string, request: ConfirmMatchesRequest): Promise<ApiResponse<{ confirmed: number; processing: boolean; message: string }>> {
+    return this.request<{ confirmed: number; processing: boolean; message: string }>(`/teacher/scan/batch/${batchId}/confirm`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
   }
 }
 
